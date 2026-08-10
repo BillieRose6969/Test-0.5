@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Rendimiento - Procesadores</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PapaParse -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Dashboard de Rendimiento - Procesadores</h1>
+    </header>
+
+    <main>
+        <section class="charts-section">
+            <h2>Errores Globales</h2>
+            <div class="charts-container">
+                <div class="chart-wrapper">
+                    <h3>Presunciones Mal Aprobadas</h3>
+                    <canvas id="aprobadasChart"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <h3>Presunciones Mal Eliminadas</h3>
+                    <canvas id="eliminadasChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section class="details-section">
+            <h2>Rendimiento Individual</h2>
+            <div class="selector-container">
+                <label for="procesadorSelect">Seleccione un procesador:</label>
+                <select id="procesadorSelect">
+                    <option value="">-- Seleccione --</option>
+                </select>
+            </div>
+
+            <div class="details-card" id="detailsCard" style="display: none;">
+                <h3 id="detailsName">Nombre</h3>
+                <div class="stats-container">
+                    <div class="stat-box">
+                        <h4>Presunciones Mal Aprobadas</h4>
+                        <p id="statAprobadas">0</p>
+                    </div>
+                    <div class="stat-box">
+                        <h4>Presunciones Mal Eliminadas</h4>
+                        <p id="statEliminadas">0</p>
+                    </div>
+                </div>
+
+                <div class="fallas-container" id="fallasContainer" style="display: none;">
+                    <h4>Detalle de Fallas (Presunciones Mal Eliminadas)</h4>
+                    <ul class="fallas-list" id="fallasList">
+                        <!-- Items de fallas irán aquí -->
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
