@@ -4,39 +4,21 @@ const urlEliminadas = "https://docs.google.com/spreadsheets/d/100OcdQ6iZ83TxJVid
 const REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutos en milisegundos
 
 const urlDetalleFallas = "https://docs.google.com/spreadsheets/d/100OcdQ6iZ83TxJVidgTWZkrQTbFSZhmaY8yBk48s78o/gviz/tq?tqx=out:csv&sheet=Detalle%20de%20Fallas%20por%20Procesador";
+const urlDetalleFallasAprobadas = "https://docs.google.com/spreadsheets/d/1msmEunitlatAq01F338OOc-iW5RSbSL-fTtXeHk9AXg/gviz/tq?tqx=out:csv&sheet=Motor%20de%20datos%20(Aprobadas)%20NO%20TOCAR";
+const urlEvidencias = "https://script.google.com/macros/s/AKfycbw5zZrsSEm2LWuLWngp98zEPNpbXul7KOfcUmKdssUo7tWLxjOP8DjYVARAwYkFVTb2/exec";
 
 // Variables globales para guardar los datos
-let datosAprobadas = []; // Ahora guardará: { nombreNormalizado, nombreOriginal, cantidad }
+let datosAprobadas = []; 
 let datosEliminadas = [];
-let datosDetalleFallas = {}; // key: nombreNormalizado, value: [{tipo, cantidad}]
+let datosDetalleFallas = {}; // key: nombreNormalizado, value: [{tipo, cantidad}] (Eliminadas)
+let datosDetalleFallasAprobadas = {}; // key: nombreNormalizado, value: [{tipo, cantidad}] (Aprobadas)
+let totalesFallasAprobadas = {}; // key: tipoDeFalla, value: total (para el 3er gráfico)
 let nombresMap = {}; // key: nombreNormalizado, value: nombreOriginal (para mostrar)
+let evidenciasMap = {}; // key: nombreNormalizado, value: { eliminadas: [url1, url2...], aprobadas: [url1, url2...] }
+
 let chartAprobadas = null;
 let chartEliminadas = null;
-
-// Funciones de normalización de nombres
-function normalizarNombre(nombre) {
-    if (!nombre) return "";
-    
-    // 1. Quitar guiones iniciales, puntos y comas, convertir a minúsculas
-    let norm = nombre.replace(/^[-]+/, '').replace(/[.,]/g, ' ').trim().toLowerCase();
-    
-    // 2. Separar en palabras
-    let palabras = norm.split(/\s+/).filter(p => p.length > 0);
-    
-    // 3. Ordenar alfabéticamente las palabras. 
-    // Esto hace que "Castrilli Alan" y "ALAN CASTRILLI" se conviertan en "alan castrilli"
-    palabras.sort();
-    
-    return palabras.join(" ");
-}
-
-function registrarNombreOriginal(nombreNormalizado, nombreOriginal) {
-    if (!nombresMap[nombreNormalizado]) {
-        // Guardar el primer nombre original que encontramos como el "representativo"
-        // Le quitamos el guion inicial si lo tiene para que se vea mejor
-        nombresMap[nombreNormalizado] = nombreOriginal.replace(/^[-]+/, '').trim();
-    }
-}
+let chartFallasAprobadas = null;
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', () => {
@@ -47,28 +29,107 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Configurar evento del select
     document.getElementById('procesadorSelect').addEventListener('change', actualizarDetalles);
+
+    // Configurar eventos del Modal
+    const modal = document.getElementById("imageModal");
+    const spanClose = document.getElementsByClassName("close-modal")[0];
+
+    spanClose.onclick = function() {
+        modal.style.display = "none";
+    }
+
+    // Cerrar modal haciendo clic afuera
+    window.onclick = function(event) {
+        if (event.target === modal) {
+            modal.style.display = "none";
+        }
+    }
 });
 
+// Función para abrir el modal con imágenes
+function abrirModal(titulo, urls) {
+    const modal = document.getElementById("imageModal");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalGallery = document.getElementById("modalGallery");
+
+    modalTitle.textContent = titulo;
+    modalGallery.innerHTML = ''; // Limpiar galería
+
+    urls.forEach(url => {
+        const img = document.createElement("img");
+        img.src = url;
+        img.alt = "Evidencia";
+        // Si hay error cargando la imagen, mostramos un texto alt clicable
+        img.onerror = () => {
+            img.style.display = 'none';
+            const a = document.createElement('a');
+            a.href = url;
+            a.target = "_blank";
+            a.textContent = `Enlace externo: ${url}`;
+            a.style.display = "block";
+            a.style.margin = "10px";
+            modalGallery.appendChild(a);
+        };
+        modalGallery.appendChild(img);
+    });
+
+    modal.style.display = "block";
+}
+
+// Función para normalizar nombres
+function normalizarNombre(nombre) {
+    if (!nombre) return "";
+    
+    // 1. Quitar guiones iniciales, puntos y comas, convertir a minúsculas
+    let norm = nombre.replace(/^[-]+/, '').replace(/[.,]/g, ' ').trim().toLowerCase();
+    
+    // 2. Separar en palabras
+    let palabras = norm.split(/\s+/).filter(p => p.length > 0);
+    
+    // 3. Ordenar alfabéticamente las palabras. 
+    palabras.sort();
+    
+    return palabras.join(" ");
+}
+
+function registrarNombreOriginal(nombreNormalizado, nombreOriginal) {
+    if (!nombresMap[nombreNormalizado]) {
+        nombresMap[nombreNormalizado] = nombreOriginal.replace(/^[-]+/, '').trim().toUpperCase();
+    }
+}
+
 async function cargarDatos() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) overlay.style.display = 'flex';
+
     try {
         console.log("Cargando datos...");
         
-        // Cargar todos los CSV en paralelo usando PapaParse
-        const [resAprobadas, resEliminadas, resFallas] = await Promise.all([
+        // Cargar todos los CSV en paralelo usando PapaParse y el API de evidencias
+        const [resAprobadas, resEliminadas, resFallas, resFallasAprobadas, resEvidencias] = await Promise.all([
             fetchCSV(urlAprobadas),
             fetchCSV(urlEliminadas),
-            fetchCSV(urlDetalleFallas)
+            fetchCSV(urlDetalleFallas),
+            fetchCSV(urlDetalleFallasAprobadas),
+            fetch(urlEvidencias).then(res => res.json()).catch(err => {
+                console.warn("No se pudo cargar el API de Evidencias de Apps Script.", err);
+                return {};
+            })
         ]);
 
-        procesarDatos(resAprobadas, resEliminadas, resFallas);
+        procesarDatos(resAprobadas, resEliminadas, resFallas, resFallasAprobadas, resEvidencias);
         renderizarGraficos();
         actualizarSelect();
         
         // Si hay uno seleccionado, actualizar su vista
-        actualizarDetalles();
+        if (document.getElementById('procesadorSelect').value) {
+            actualizarDetalles();
+        }
         
     } catch (error) {
         console.error("Error al cargar los datos:", error);
+    } finally {
+        if (overlay) overlay.style.display = 'none';
     }
 }
 
@@ -83,11 +144,28 @@ function fetchCSV(url) {
     });
 }
 
-function procesarDatos(csvAprobadas, csvEliminadas, csvFallas) {
+// Convertimos URLs de Drive al formato directo (por las dudas)
+function convertirUrlDrive(url) {
+    if (!url) return "";
+    let driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (driveMatch && driveMatch[1]) {
+        return `https://drive.google.com/uc?id=${driveMatch[1]}`;
+    }
+    let openMatch = url.match(/id=([a-zA-Z0-9_-]+)/);
+    if (openMatch && openMatch[1] && url.includes('drive.google.com')) {
+        return `https://drive.google.com/uc?id=${openMatch[1]}`;
+    }
+    return url;
+}
+
+function procesarDatos(csvAprobadas, csvEliminadas, csvFallas, csvFallasAprobadas, csvEvidencias) {
     let tempAprobadas = {};
     let tempEliminadas = {};
     datosDetalleFallas = {};
+    datosDetalleFallasAprobadas = {};
+    totalesFallasAprobadas = {};
     nombresMap = {};
+    evidenciasMap = {};
 
     // Procesar Presunciones Mal Aprobadas
     for (let i = 1; i < csvAprobadas.length; i++) {
@@ -129,7 +207,6 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas) {
     }));
 
     // Procesar Detalle de Fallas (Presunciones mal eliminadas detalle)
-    // Formato: Fila 0 -> "Procesador", "Tipo de Error (Unificado)", "Cantidad de Veces"
     let lastProcesadorNorm = "";
     
     for (let i = 1; i < csvFallas.length; i++) {
@@ -138,28 +215,96 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas) {
 
         let procesadorCell = row[0] ? row[0].trim() : "";
         
-        // Si hay procesador en esta fila, actualizar el último visto
         if (procesadorCell !== "") {
             lastProcesadorNorm = normalizarNombre(procesadorCell);
             registrarNombreOriginal(lastProcesadorNorm, procesadorCell);
         }
 
-        // Si tenemos un procesador activo y un tipo de error
         const tipoError = row[1] ? row[1].trim() : "";
         if (lastProcesadorNorm !== "" && tipoError !== "") {
             const cantidad = parseInt(row[2]) || 0;
 
-            if (!datosDetalleFallas[lastProcesadorNorm]) {
-                datosDetalleFallas[lastProcesadorNorm] = [];
+            if (cantidad > 0) {
+                if (!datosDetalleFallas[lastProcesadorNorm]) {
+                    datosDetalleFallas[lastProcesadorNorm] = [];
+                }
+                
+                let existente = datosDetalleFallas[lastProcesadorNorm].find(f => f.tipo === tipoError);
+                if (existente) {
+                    existente.cantidad += cantidad;
+                } else {
+                    datosDetalleFallas[lastProcesadorNorm].push({ tipo: tipoError, cantidad: cantidad });
+                }
+            }
+        }
+    }
+
+    // Procesar Detalle de Fallas Aprobadas
+    let lastAprobadasNorm = "";
+    let diccionarioSiglas = {};
+    
+    for (let i = 0; i < csvFallasAprobadas.length; i++) {
+        const row = csvFallasAprobadas[i];
+        if (row && row.length >= 10) {
+            let sigla = row[8] ? row[8].trim() : "";
+            let nombreCompleto = row[9] ? row[9].trim() : "";
+            if (sigla !== "" && nombreCompleto !== "" && sigla !== "SIGLA") { 
+                diccionarioSiglas[sigla] = nombreCompleto;
+            }
+        }
+    }
+
+    for (let i = 0; i < csvFallasAprobadas.length; i++) {
+        const row = csvFallasAprobadas[i];
+        if (!row || row.length < 3) continue;
+
+        let procesadorCell = row[0] ? row[0].trim() : "";
+        
+        if (procesadorCell !== "") {
+            let nombrePuro = procesadorCell.replace(/^(?:[A-Z]+\s+)?Procesador\s+/i, '').trim();
+            if (nombrePuro !== "") {
+                lastAprobadasNorm = normalizarNombre(nombrePuro);
+                registrarNombreOriginal(lastAprobadasNorm, nombrePuro);
+            }
+        }
+
+        let siglaError = row[1] ? row[1].trim() : "";
+        let cantidad = parseFloat(row[2]) || 0;
+
+        if (lastAprobadasNorm !== "" && siglaError !== "" && !siglaError.includes("DETALLE DE FALLAS")) {
+            let tipoErrorCompleto = diccionarioSiglas[siglaError] || siglaError;
+            
+            if (cantidad > 0) { 
+                if (!datosDetalleFallasAprobadas[lastAprobadasNorm]) {
+                    datosDetalleFallasAprobadas[lastAprobadasNorm] = [];
+                }
+                
+                let existente = datosDetalleFallasAprobadas[lastAprobadasNorm].find(f => f.tipo === tipoErrorCompleto);
+                if (existente) {
+                    existente.cantidad += cantidad;
+                } else {
+                    datosDetalleFallasAprobadas[lastAprobadasNorm].push({ tipo: tipoErrorCompleto, cantidad: cantidad });
+                }
+
+                totalesFallasAprobadas[tipoErrorCompleto] = (totalesFallasAprobadas[tipoErrorCompleto] || 0) + cantidad;
+            }
+        }
+    }
+
+    // Procesar Evidencias (Imágenes desde Google Apps Script API)
+    if (csvEvidencias && Object.keys(csvEvidencias).length > 0 && !csvEvidencias.error) {
+        for (let proc in csvEvidencias) {
+            const nombreNorm = normalizarNombre(proc);
+            
+            if (!evidenciasMap[nombreNorm]) {
+                evidenciasMap[nombreNorm] = { aprobadas: [], eliminadas: [] };
             }
             
-            // Buscar si ya existe este tipo de error para sumarlo (por si acaso hay repetidos)
-            let existente = datosDetalleFallas[lastProcesadorNorm].find(f => f.tipo === tipoError);
-            if (existente) {
-                existente.cantidad += cantidad;
-            } else {
-                datosDetalleFallas[lastProcesadorNorm].push({ tipo: tipoError, cantidad: cantidad });
-            }
+            const aprobadasList = csvEvidencias[proc].aprobadas || [];
+            const eliminadasList = csvEvidencias[proc].eliminadas || [];
+            
+            evidenciasMap[nombreNorm].aprobadas.push(...aprobadasList.map(u => convertirUrlDrive(u)));
+            evidenciasMap[nombreNorm].eliminadas.push(...eliminadasList.map(u => convertirUrlDrive(u)));
         }
     }
 }
@@ -171,9 +316,16 @@ function renderizarGraficos() {
     // Top 10 Eliminadas
     const topEliminadas = [...datosEliminadas].sort((a, b) => b.cantidad - a.cantidad).slice(0, 10);
 
-    // Preparar datos para Chart.js
+    // Top 10 Tipos de Fallas Aprobadas
+    const arrayFallasAprobadas = Object.keys(totalesFallasAprobadas).map(tipo => ({
+        tipo: tipo,
+        cantidad: totalesFallasAprobadas[tipo]
+    }));
+    const topTiposAprobadas = arrayFallasAprobadas.sort((a, b) => b.cantidad - a.cantidad).slice(0, 10);
+
     const ctxAprobadas = document.getElementById('aprobadasChart').getContext('2d');
     const ctxEliminadas = document.getElementById('eliminadasChart').getContext('2d');
+    const ctxFallasAprobadas = document.getElementById('fallasAprobadasChart').getContext('2d');
 
     const configAprobadas = {
         type: 'pie',
@@ -211,32 +363,49 @@ function renderizarGraficos() {
         }
     };
 
+    const configFallasAprobadas = {
+        type: 'pie',
+        data: {
+            labels: topTiposAprobadas.map(d => d.tipo),
+            datasets: [{
+                label: 'Cantidad',
+                data: topTiposAprobadas.map(d => d.cantidad),
+                backgroundColor: generarColores(topTiposAprobadas.length)
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'right' }
+            }
+        }
+    };
+
     if (chartAprobadas) chartAprobadas.destroy();
     if (chartEliminadas) chartEliminadas.destroy();
+    if (chartFallasAprobadas) chartFallasAprobadas.destroy();
 
     chartAprobadas = new Chart(ctxAprobadas, configAprobadas);
     chartEliminadas = new Chart(ctxEliminadas, configEliminadas);
+    chartFallasAprobadas = new Chart(ctxFallasAprobadas, configFallasAprobadas);
 }
 
 function actualizarSelect() {
     const select = document.getElementById('procesadorSelect');
-    const valorActualNorm = select.value; // Ahora guardamos el nombreNormalizado como value
+    const valorActualNorm = select.value;
     
-    // Obtener todos los nombres normalizados únicos y ordenarlos por el nombre original (mostrar)
     const normalizados = Object.keys(nombresMap).sort((a, b) => {
         return nombresMap[a].localeCompare(nombresMap[b]);
     });
 
-    // Reconstruir opciones
     select.innerHTML = '<option value="">-- Seleccione --</option>';
     normalizados.forEach(norm => {
         const option = document.createElement('option');
-        option.value = norm; // Key = nombreNormalizado
-        option.textContent = nombresMap[norm]; // Text = nombreOriginal
+        option.value = norm;
+        option.textContent = nombresMap[norm]; 
         select.appendChild(option);
     });
 
-    // Restaurar selección si existe
     if (normalizados.includes(valorActualNorm)) {
         select.value = valorActualNorm;
     }
@@ -248,8 +417,16 @@ function actualizarDetalles() {
     const nameEl = document.getElementById('detailsName');
     const statAprobadasEl = document.getElementById('statAprobadas');
     const statEliminadasEl = document.getElementById('statEliminadas');
+    
+    const fallasWrapper = document.getElementById('fallasWrapper');
     const fallasContainer = document.getElementById('fallasContainer');
     const fallasList = document.getElementById('fallasList');
+    
+    const fallasContainerAprobadas = document.getElementById('fallasContainerAprobadas');
+    const fallasListAprobadas = document.getElementById('fallasListAprobadas');
+
+    const galleryAprobadas = document.getElementById('galleryAprobadas');
+    const galleryEliminadas = document.getElementById('galleryEliminadas');
 
     const norm = select.value;
 
@@ -259,34 +436,82 @@ function actualizarDetalles() {
     }
 
     card.style.display = 'block';
-    nameEl.textContent = nombresMap[norm]; // Mostrar el nombre original
+    nameEl.textContent = nombresMap[norm]; 
 
-    // Buscar en los arrays consolidados
     const dataAprobada = datosAprobadas.find(d => d.nombreNormalizado === norm);
     const dataEliminada = datosEliminadas.find(d => d.nombreNormalizado === norm);
 
     statAprobadasEl.textContent = dataAprobada ? dataAprobada.cantidad : '0';
     statEliminadasEl.textContent = dataEliminada ? dataEliminada.cantidad : '0';
 
-    // Actualizar Detalle de Fallas
-    const fallas = datosDetalleFallas[norm];
-    if (fallas && fallas.length > 0) {
-        fallasContainer.style.display = 'block';
-        fallasList.innerHTML = ''; // Limpiar lista
-        
-        // Ordenar fallas de mayor a menor cantidad
-        fallas.sort((a, b) => b.cantidad - a.cantidad);
+    const fallasEliminadas = datosDetalleFallas[norm];
+    const fallasAprobadas = datosDetalleFallasAprobadas[norm];
+    
+    let hayEliminadas = fallasEliminadas && fallasEliminadas.length > 0;
+    let hayAprobadas = fallasAprobadas && fallasAprobadas.length > 0;
 
-        fallas.forEach(f => {
-            const li = document.createElement('li');
-            li.innerHTML = `
-                <span class="falla-tipo">${f.tipo}</span>
-                <span class="falla-cantidad">${f.cantidad}</span>
-            `;
-            fallasList.appendChild(li);
-        });
+    const evidencias = evidenciasMap[norm] || { aprobadas: [], eliminadas: [] };
+
+    if (hayEliminadas || hayAprobadas || evidencias.aprobadas.length > 0 || evidencias.eliminadas.length > 0) {
+        fallasWrapper.style.display = 'flex';
+    } else {
+        fallasWrapper.style.display = 'none';
+    }
+
+    // Llenar eliminadas
+    if (hayEliminadas || evidencias.eliminadas.length > 0) {
+        fallasContainer.style.display = 'block';
+        fallasList.innerHTML = ''; 
+        if (fallasEliminadas) {
+            fallasEliminadas.sort((a, b) => b.cantidad - a.cantidad);
+            fallasEliminadas.forEach(f => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <span class="falla-tipo">${f.tipo}</span>
+                    <span class="falla-cantidad">${f.cantidad}</span>
+                `;
+                fallasList.appendChild(li);
+            });
+        }
+        
+        galleryEliminadas.innerHTML = '';
+        if (evidencias.eliminadas.length > 0) {
+            const btn = document.createElement('button');
+            btn.className = 'btn-evidencia btn-evidencia-eliminada';
+            btn.textContent = `🖼️ Ver Galería (${evidencias.eliminadas.length} enlaces)`;
+            btn.onclick = () => abrirModal(`Evidencias Mal Eliminadas - ${nombresMap[norm]}`, evidencias.eliminadas);
+            galleryEliminadas.appendChild(btn);
+        }
     } else {
         fallasContainer.style.display = 'none';
+    }
+
+    // Llenar aprobadas
+    if (hayAprobadas || evidencias.aprobadas.length > 0) {
+        fallasContainerAprobadas.style.display = 'block';
+        fallasListAprobadas.innerHTML = ''; 
+        if (fallasAprobadas) {
+            fallasAprobadas.sort((a, b) => b.cantidad - a.cantidad);
+            fallasAprobadas.forEach(f => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <span class="falla-tipo">${f.tipo}</span>
+                    <span class="falla-cantidad">${f.cantidad}</span>
+                `;
+                fallasListAprobadas.appendChild(li);
+            });
+        }
+        
+        galleryAprobadas.innerHTML = '';
+        if (evidencias.aprobadas.length > 0) {
+            const btn = document.createElement('button');
+            btn.className = 'btn-evidencia btn-evidencia-aprobada';
+            btn.textContent = `🖼️ Ver Galería (${evidencias.aprobadas.length} enlaces)`;
+            btn.onclick = () => abrirModal(`Evidencias Mal Aprobadas - ${nombresMap[norm]}`, evidencias.aprobadas);
+            galleryAprobadas.appendChild(btn);
+        }
+    } else {
+        fallasContainerAprobadas.style.display = 'none';
     }
 }
 
@@ -295,6 +520,5 @@ function generarColores(cantidad) {
         '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
         '#FF9F40', '#E7E9ED', '#8AC926', '#1982C4', '#6A4C93'
     ];
-    // Repetir o extender si es necesario, pero maximo son 10 en top10
     return colores.slice(0, cantidad);
 }
