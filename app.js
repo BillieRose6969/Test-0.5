@@ -14,7 +14,7 @@ let datosDetalleFallas = {}; // key: nombreNormalizado, value: [{tipo, cantidad}
 let datosDetalleFallasAprobadas = {}; // key: nombreNormalizado, value: [{tipo, cantidad}] (Aprobadas)
 let totalesFallasAprobadas = {}; // key: tipoDeFalla, value: total (para el 3er gráfico)
 let nombresMap = {}; // key: nombreNormalizado, value: nombreOriginal (para mostrar)
-let evidenciasMap = {}; // key: nombreNormalizado, value: { eliminadas: [url1, url2...], aprobadas: [url1, url2...] }
+let evidenciasMap = {}; // key: nombreNormalizado, value: { eliminadas: [{url, name}], aprobadas: [{url, name}] }
 
 let chartAprobadas = null;
 let chartEliminadas = null;
@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Función para abrir el modal con imágenes
-function abrirModal(titulo, urls) {
+function abrirModal(titulo, evidenciasArray) {
     const modal = document.getElementById("imageModal");
     const modalTitle = document.getElementById("modalTitle");
     const modalGallery = document.getElementById("modalGallery");
@@ -55,22 +55,38 @@ function abrirModal(titulo, urls) {
     modalTitle.textContent = titulo;
     modalGallery.innerHTML = ''; // Limpiar galería
 
-    urls.forEach(url => {
+    evidenciasArray.forEach(ev => {
+        // Soporte para objetos {url, name} o urls en texto plano (por compatibilidad)
+        const url = typeof ev === 'object' ? ev.url : ev;
+        const name = typeof ev === 'object' ? ev.name : 'Enlace externo';
+
+        const container = document.createElement("div");
+        container.className = "modal-image-container";
+
         const img = document.createElement("img");
         img.src = url;
-        img.alt = "Evidencia";
-        // Si hay error cargando la imagen, mostramos un texto alt clicable
+        img.alt = name;
+
+        const titleLabel = document.createElement("p");
+        titleLabel.textContent = name;
+        titleLabel.className = "modal-image-title";
+
+        // Si hay error cargando la imagen (ej: link roto o permisos), mostramos solo un enlace
         img.onerror = () => {
             img.style.display = 'none';
+            titleLabel.style.display = 'none';
+            
             const a = document.createElement('a');
             a.href = url;
             a.target = "_blank";
-            a.textContent = `Enlace externo: ${url}`;
-            a.style.display = "block";
-            a.style.margin = "10px";
-            modalGallery.appendChild(a);
+            a.textContent = `🔗 ${name}`;
+            a.className = "modal-broken-link";
+            container.appendChild(a);
         };
-        modalGallery.appendChild(img);
+
+        container.appendChild(img);
+        container.appendChild(titleLabel);
+        modalGallery.appendChild(container);
     });
 
     modal.style.display = "block";
@@ -94,6 +110,8 @@ function normalizarNombre(nombre) {
 
 function registrarNombreOriginal(nombreNormalizado, nombreOriginal) {
     if (!nombresMap[nombreNormalizado]) {
+        // Guardar el primer nombre original que encontramos como el "representativo"
+        // Convertimos a mayúsculas como fue solicitado
         nombresMap[nombreNormalizado] = nombreOriginal.replace(/^[-]+/, '').trim().toUpperCase();
     }
 }
@@ -144,7 +162,7 @@ function fetchCSV(url) {
     });
 }
 
-// Convertimos URLs de Drive al formato directo (por las dudas)
+// Convertimos URLs de Drive al formato directo
 function convertirUrlDrive(url) {
     if (!url) return "";
     let driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
@@ -292,6 +310,7 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas, csvFallasAprobada
     }
 
     // Procesar Evidencias (Imágenes desde Google Apps Script API)
+    // El API devuelve un objeto JSON directamente: { "procesador norm": { aprobadas: [{url, name}], eliminadas: [{url, name}] } }
     if (csvEvidencias && Object.keys(csvEvidencias).length > 0 && !csvEvidencias.error) {
         for (let proc in csvEvidencias) {
             const nombreNorm = normalizarNombre(proc);
@@ -300,23 +319,27 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas, csvFallasAprobada
                 evidenciasMap[nombreNorm] = { aprobadas: [], eliminadas: [] };
             }
             
+            // Soportamos formato string (viejo) o el nuevo formato objeto {url, name}
+            const transformList = (list) => list.map(item => {
+                if (typeof item === 'object') {
+                    return { url: convertirUrlDrive(item.url), name: item.name };
+                }
+                return { url: convertirUrlDrive(item), name: 'Evidencia' };
+            });
+
             const aprobadasList = csvEvidencias[proc].aprobadas || [];
             const eliminadasList = csvEvidencias[proc].eliminadas || [];
             
-            evidenciasMap[nombreNorm].aprobadas.push(...aprobadasList.map(u => convertirUrlDrive(u)));
-            evidenciasMap[nombreNorm].eliminadas.push(...eliminadasList.map(u => convertirUrlDrive(u)));
+            evidenciasMap[nombreNorm].aprobadas.push(...transformList(aprobadasList));
+            evidenciasMap[nombreNorm].eliminadas.push(...transformList(eliminadasList));
         }
     }
 }
 
 function renderizarGraficos() {
-    // Top 10 Aprobadas
     const topAprobadas = [...datosAprobadas].sort((a, b) => b.cantidad - a.cantidad).slice(0, 10);
-    
-    // Top 10 Eliminadas
     const topEliminadas = [...datosEliminadas].sort((a, b) => b.cantidad - a.cantidad).slice(0, 10);
 
-    // Top 10 Tipos de Fallas Aprobadas
     const arrayFallasAprobadas = Object.keys(totalesFallasAprobadas).map(tipo => ({
         tipo: tipo,
         cantidad: totalesFallasAprobadas[tipo]
