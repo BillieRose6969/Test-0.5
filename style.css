@@ -326,3 +326,37 @@ select {
     border-radius: 4px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
+
+.modal-image-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    max-width: 100%;
+}
+
+.modal-gallery img {
+    max-width: 100%;
+    height: auto;
+    max-height: 400px;
+    object-fit: contain;
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.modal-image-title {
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+    margin: 0;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.modal-broken-link {
+    color: #3498db;
+    text-decoration: underline;
+    font-weight: 500;
+}
