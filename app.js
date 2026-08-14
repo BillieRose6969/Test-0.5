@@ -10,11 +10,11 @@ const urlEvidencias = "https://script.google.com/macros/s/AKfycbw5zZrsSEm2LWuLWn
 // Variables globales para guardar los datos
 let datosAprobadas = []; 
 let datosEliminadas = [];
-let datosDetalleFallas = {}; // key: nombreNormalizado, value: [{tipo, cantidad}] (Eliminadas)
-let datosDetalleFallasAprobadas = {}; // key: nombreNormalizado, value: [{tipo, cantidad}] (Aprobadas)
-let totalesFallasAprobadas = {}; // key: tipoDeFalla, value: total (para el 3er gráfico)
-let nombresMap = {}; // key: nombreNormalizado, value: nombreOriginal (para mostrar)
-let evidenciasMap = {}; // key: nombreNormalizado, value: { eliminadas: [{url, name}], aprobadas: [{url, name}] }
+let datosDetalleFallas = {}; 
+let datosDetalleFallasAprobadas = {}; 
+let totalesFallasAprobadas = {}; 
+let nombresMap = {}; 
+let evidenciasMap = {}; 
 
 let chartAprobadas = null;
 let chartEliminadas = null;
@@ -24,10 +24,8 @@ let chartFallasAprobadas = null;
 document.addEventListener('DOMContentLoaded', () => {
     cargarDatos();
     
-    // Configurar actualización automática
     setInterval(cargarDatos, REFRESH_INTERVAL);
 
-    // Configurar evento del select
     document.getElementById('procesadorSelect').addEventListener('change', actualizarDetalles);
 
     // Configurar eventos del Modal
@@ -56,36 +54,21 @@ function abrirModal(titulo, evidenciasArray) {
     modalGallery.innerHTML = ''; // Limpiar galería
 
     evidenciasArray.forEach(ev => {
-        // Soporte para objetos {url, name} o urls en texto plano (por compatibilidad)
+        // Soporte para objetos {url, name} o urls en texto plano
         const url = typeof ev === 'object' ? ev.url : ev;
         const name = typeof ev === 'object' ? ev.name : 'Enlace externo';
 
         const container = document.createElement("div");
         container.className = "modal-image-container";
 
-        const img = document.createElement("img");
-        img.src = url;
-        img.alt = name;
-
-        const titleLabel = document.createElement("p");
-        titleLabel.textContent = name;
-        titleLabel.className = "modal-image-title";
-
-        // Si hay error cargando la imagen (ej: link roto o permisos), mostramos solo un enlace
-        img.onerror = () => {
-            img.style.display = 'none';
-            titleLabel.style.display = 'none';
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.target = "_blank";
-            a.textContent = `🔗 ${name}`;
-            a.className = "modal-broken-link";
-            container.appendChild(a);
-        };
-
-        container.appendChild(img);
-        container.appendChild(titleLabel);
+        // Google Drive bloquea visualización directa (CORS), así que generamos botones para abrir en otra pestaña
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = "_blank";
+        a.textContent = `🔗 ${name}`;
+        a.className = "modal-drive-link";
+        
+        container.appendChild(a);
         modalGallery.appendChild(container);
     });
 
@@ -95,23 +78,14 @@ function abrirModal(titulo, evidenciasArray) {
 // Función para normalizar nombres
 function normalizarNombre(nombre) {
     if (!nombre) return "";
-    
-    // 1. Quitar guiones iniciales, puntos y comas, convertir a minúsculas
     let norm = nombre.replace(/^[-]+/, '').replace(/[.,]/g, ' ').trim().toLowerCase();
-    
-    // 2. Separar en palabras
     let palabras = norm.split(/\s+/).filter(p => p.length > 0);
-    
-    // 3. Ordenar alfabéticamente las palabras. 
     palabras.sort();
-    
     return palabras.join(" ");
 }
 
 function registrarNombreOriginal(nombreNormalizado, nombreOriginal) {
     if (!nombresMap[nombreNormalizado]) {
-        // Guardar el primer nombre original que encontramos como el "representativo"
-        // Convertimos a mayúsculas como fue solicitado
         nombresMap[nombreNormalizado] = nombreOriginal.replace(/^[-]+/, '').trim().toUpperCase();
     }
 }
@@ -123,7 +97,6 @@ async function cargarDatos() {
     try {
         console.log("Cargando datos...");
         
-        // Cargar todos los CSV en paralelo usando PapaParse y el API de evidencias
         const [resAprobadas, resEliminadas, resFallas, resFallasAprobadas, resEvidencias] = await Promise.all([
             fetchCSV(urlAprobadas),
             fetchCSV(urlEliminadas),
@@ -139,7 +112,6 @@ async function cargarDatos() {
         renderizarGraficos();
         actualizarSelect();
         
-        // Si hay uno seleccionado, actualizar su vista
         if (document.getElementById('procesadorSelect').value) {
             actualizarDetalles();
         }
@@ -162,7 +134,6 @@ function fetchCSV(url) {
     });
 }
 
-// Convertimos URLs de Drive al formato directo
 function convertirUrlDrive(url) {
     if (!url) return "";
     let driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
@@ -224,15 +195,13 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas, csvFallasAprobada
         cantidad: tempEliminadas[k]
     }));
 
-    // Procesar Detalle de Fallas (Presunciones mal eliminadas detalle)
+    // Procesar Detalle de Fallas (Eliminadas)
     let lastProcesadorNorm = "";
-    
     for (let i = 1; i < csvFallas.length; i++) {
         const row = csvFallas[i];
         if (!row || row.length < 2) continue;
 
         let procesadorCell = row[0] ? row[0].trim() : "";
-        
         if (procesadorCell !== "") {
             lastProcesadorNorm = normalizarNombre(procesadorCell);
             registrarNombreOriginal(lastProcesadorNorm, procesadorCell);
@@ -241,12 +210,10 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas, csvFallasAprobada
         const tipoError = row[1] ? row[1].trim() : "";
         if (lastProcesadorNorm !== "" && tipoError !== "") {
             const cantidad = parseInt(row[2]) || 0;
-
             if (cantidad > 0) {
                 if (!datosDetalleFallas[lastProcesadorNorm]) {
                     datosDetalleFallas[lastProcesadorNorm] = [];
                 }
-                
                 let existente = datosDetalleFallas[lastProcesadorNorm].find(f => f.tipo === tipoError);
                 if (existente) {
                     existente.cantidad += cantidad;
@@ -260,7 +227,6 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas, csvFallasAprobada
     // Procesar Detalle de Fallas Aprobadas
     let lastAprobadasNorm = "";
     let diccionarioSiglas = {};
-    
     for (let i = 0; i < csvFallasAprobadas.length; i++) {
         const row = csvFallasAprobadas[i];
         if (row && row.length >= 10) {
@@ -277,7 +243,6 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas, csvFallasAprobada
         if (!row || row.length < 3) continue;
 
         let procesadorCell = row[0] ? row[0].trim() : "";
-        
         if (procesadorCell !== "") {
             let nombrePuro = procesadorCell.replace(/^(?:[A-Z]+\s+)?Procesador\s+/i, '').trim();
             if (nombrePuro !== "") {
@@ -291,35 +256,29 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas, csvFallasAprobada
 
         if (lastAprobadasNorm !== "" && siglaError !== "" && !siglaError.includes("DETALLE DE FALLAS")) {
             let tipoErrorCompleto = diccionarioSiglas[siglaError] || siglaError;
-            
             if (cantidad > 0) { 
                 if (!datosDetalleFallasAprobadas[lastAprobadasNorm]) {
                     datosDetalleFallasAprobadas[lastAprobadasNorm] = [];
                 }
-                
                 let existente = datosDetalleFallasAprobadas[lastAprobadasNorm].find(f => f.tipo === tipoErrorCompleto);
                 if (existente) {
                     existente.cantidad += cantidad;
                 } else {
                     datosDetalleFallasAprobadas[lastAprobadasNorm].push({ tipo: tipoErrorCompleto, cantidad: cantidad });
                 }
-
                 totalesFallasAprobadas[tipoErrorCompleto] = (totalesFallasAprobadas[tipoErrorCompleto] || 0) + cantidad;
             }
         }
     }
 
-    // Procesar Evidencias (Imágenes desde Google Apps Script API)
-    // El API devuelve un objeto JSON directamente: { "procesador norm": { aprobadas: [{url, name}], eliminadas: [{url, name}] } }
+    // Procesar Evidencias (Imágenes desde API)
     if (csvEvidencias && Object.keys(csvEvidencias).length > 0 && !csvEvidencias.error) {
         for (let proc in csvEvidencias) {
             const nombreNorm = normalizarNombre(proc);
-            
             if (!evidenciasMap[nombreNorm]) {
                 evidenciasMap[nombreNorm] = { aprobadas: [], eliminadas: [] };
             }
             
-            // Soportamos formato string (viejo) o el nuevo formato objeto {url, name}
             const transformList = (list) => list.map(item => {
                 if (typeof item === 'object') {
                     return { url: convertirUrlDrive(item.url), name: item.name };
