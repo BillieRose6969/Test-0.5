@@ -360,3 +360,23 @@ select {
     text-decoration: underline;
     font-weight: 500;
 }
+
+.modal-drive-link {
+    display: inline-block;
+    color: white;
+    background-color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    padding: 10px 15px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    width: 100%;
+    max-width: 400px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.modal-drive-link:hover {
+    background-color: var(--secondary-color);
+}
