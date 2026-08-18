@@ -25,6 +25,10 @@ let currentImageIndex = 0;
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', () => {
+    // Cyberpunk Chart Styles
+    Chart.defaults.color = '#8b8d96';
+    Chart.defaults.font.family = 'Rajdhani, sans-serif';
+
     cargarDatos();
     
     setInterval(cargarDatos, REFRESH_INTERVAL);
@@ -112,6 +116,41 @@ function actualizarImagenModal() {
     img.src = url;
     img.alt = name;
     
+    // --- LÓGICA DE ZOOM CON RUEDA Y MOVIMIENTO ---
+    let currentZoom = 2; // Nivel de zoom inicial al pasar el mouse
+
+    img.addEventListener('mousemove', function(e) {
+        // Usamos offsetX/Y para que sea relativo a la imagen sin transformar, evita saltos
+        const xPercent = (e.offsetX / this.offsetWidth) * 100;
+        const yPercent = (e.offsetY / this.offsetHeight) * 100;
+        
+        this.style.transformOrigin = `${xPercent}% ${yPercent}%`;
+        this.style.transform = `scale(${currentZoom})`;
+    });
+
+    img.addEventListener('wheel', function(e) {
+        e.preventDefault(); // Evita que la página haga scroll al girar la rueda
+        
+        if (e.deltaY < 0) {
+            currentZoom += 0.5; // Zoom in
+        } else {
+            currentZoom -= 0.5; // Zoom out
+        }
+        
+        // Limitamos el zoom entre 1 (normal) y 10 (máximo)
+        if (currentZoom < 1) currentZoom = 1;
+        if (currentZoom > 10) currentZoom = 10;
+        
+        this.style.transform = `scale(${currentZoom})`;
+    });
+
+    img.addEventListener('mouseleave', function() {
+        currentZoom = 2; // Reiniciamos el nivel de zoom para la próxima vez
+        this.style.transformOrigin = 'center center';
+        this.style.transform = 'scale(1)';
+    });
+    // ----------------------------------------------
+
     const titleLabel = document.createElement("p");
     titleLabel.textContent = name;
     titleLabel.className = "modal-image-title";
@@ -163,7 +202,15 @@ function normalizarNombre(nombre) {
 
 function registrarNombreOriginal(nombreNormalizado, nombreOriginal) {
     if (!nombresMap[nombreNormalizado]) {
-        nombresMap[nombreNormalizado] = nombreOriginal.replace(/^[-]+/, '').trim().toUpperCase();
+        // Reemplazamos los puntos por un ESPACIO, quitamos guiones iniciales y normalizamos espacios múltiples
+        let nombreLimpio = nombreOriginal
+            .replace(/\./g, ' ')          // Cambia puntos por espacios
+            .replace(/^[-]+/, '')         // Quita guiones al principio
+            .replace(/\s+/g, ' ')         // Si quedaron dobles espacios, los convierte en uno solo
+            .trim()
+            .toUpperCase();
+            
+        nombresMap[nombreNormalizado] = nombreLimpio;
     }
 }
 
@@ -360,9 +407,18 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas, csvFallasAprobada
 }
 
 function generarColores(cantidad) {
+    // Cyberpunk Arasaka Red/Grey Palette
     const colores = [
-        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
-        '#FF9F40', '#E7E9ED', '#8AC926', '#1982C4', '#6A4C93'
+        '#ff2a2a', // Arasaka Red
+        '#8b0000', // Dark Red
+        '#4a0000', // Very Dark Red
+        '#ff4a4a', // Bright Red
+        '#15161a', // Lead Grey
+        '#2a2b33', // Border Grey
+        '#e2e2e5', // Text White
+        '#8b8d96', // Text Muted
+        '#ff7f7f', // Light Red
+        '#3a0000'  // Deep Maroon
     ];
     let result = [];
     for(let i=0; i<cantidad; i++) {
@@ -386,10 +442,12 @@ function renderizarGraficos() {
             datasets: [{
                 data: dataAprobadas,
                 backgroundColor: generarColores(dataAprobadas.length),
-                borderWidth: 1
+                borderWidth: 1,
+                borderColor: '#15161a'
             }]
         },
         options: {
+            color: '#e2e2e5',
             responsive: true,
             plugins: {
                 legend: { position: 'bottom', labels: { boxWidth: 12 } }
@@ -411,10 +469,12 @@ function renderizarGraficos() {
             datasets: [{
                 data: dataEliminadas,
                 backgroundColor: generarColores(dataEliminadas.length),
-                borderWidth: 1
+                borderWidth: 1,
+                borderColor: '#15161a'
             }]
         },
         options: {
+            color: '#e2e2e5',
             responsive: true,
             plugins: {
                 legend: { position: 'bottom', labels: { boxWidth: 12 } }
@@ -444,10 +504,12 @@ function renderizarGraficos() {
             datasets: [{
                 data: dataFallas,
                 backgroundColor: generarColores(dataFallas.length),
-                borderWidth: 1
+                borderWidth: 1,
+                borderColor: '#15161a'
             }]
         },
         options: {
+            color: '#e2e2e5',
             responsive: true,
             plugins: {
                 legend: { position: 'bottom', labels: { boxWidth: 12 } }
@@ -469,8 +531,10 @@ function actualizarSelect() {
     const valorActual = select.value;
     select.innerHTML = '<option value="">-- Seleccione --</option>';
 
-    let todosNombres = Object.keys(nombresMap);
-    todosNombres.sort();
+    // Ordenar los nombres visibles alfabéticamente
+    let todosNombres = Object.keys(nombresMap).sort((a, b) => {
+        return nombresMap[a].localeCompare(nombresMap[b]);
+    });
 
     todosNombres.forEach(norm => {
         const opt = document.createElement('option');
