@@ -380,3 +380,57 @@ select {
 .modal-drive-link:hover {
     background-color: var(--secondary-color);
 }
+
+/* Carousel Styles */
+.carousel-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 100%;
+}
+
+.carousel-btn {
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    padding: 15px 20px;
+    font-size: 24px;
+    cursor: pointer;
+    border-radius: 5px;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    transition: background-color 0.3s;
+}
+
+.carousel-btn:hover {
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+#prevBtn {
+    left: 10px;
+}
+
+#nextBtn {
+    right: 10px;
+}
+
+.carousel-counter {
+    text-align: center;
+    margin-top: 10px;
+    color: #666;
+    font-weight: 500;
+}
+
+.modal-gallery {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.modal-image-container img {
+    max-height: 70vh; 
+    object-fit: contain;
+}
