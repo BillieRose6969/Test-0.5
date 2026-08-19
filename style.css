@@ -539,3 +539,60 @@ select:focus, select:hover {
     background-color: var(--accent-red);
     color: var(--bg-main);
 }
+
+/* --- FONDO GLITCH DE NOMBRES --- */
+.glitch-bg {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; /* Para que los nombres no bloqueen los clics del mouse */
+    z-index: -1;          /* Detrás de todas las tarjetas */
+    overflow: hidden;
+}
+
+.glitch-name {
+    position: absolute;
+    color: var(--accent-red);
+    font-family: var(--font-mono);
+    font-weight: bold;
+    text-transform: uppercase;
+    white-space: nowrap;
+    opacity: 0; /* Oculto por defecto */
+    text-shadow: 2px 0px 5px rgba(255, 42, 42, 0.8), -2px 0px 2px #fff;
+    /* La animación dura 0.8 segundos en total */
+    animation: glitch-flash 0.8s linear forwards; 
+}
+
+@keyframes glitch-flash {
+    0%   { opacity: 0; transform: scale(1) skewX(0deg); }
+    10%  { opacity: 0.15; transform: scale(1.1) skewX(20deg); }
+    20%  { opacity: 0; }
+    30%  { opacity: 0.25; transform: scale(1.2) skewX(-15deg); filter: blur(2px); }
+    40%  { opacity: 0; }
+    50%  { opacity: 0.1; transform: scale(1) skewX(5deg); }
+    60%  { opacity: 0; }
+    100% { opacity: 0; }
+}
+
+/* --- BOTÓN ACTUALIZAR --- */
+.btn-refresh {
+    margin-top: 15px;
+    padding: 8px 20px;
+    background-color: var(--bg-main);
+    color: var(--accent-red);
+    border: 1px solid var(--border-accent);
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 10px rgba(255, 42, 42, 0.1);
+}
+
+.btn-refresh:hover {
+    background-color: var(--accent-red);
+    color: var(--bg-main);
+    border-color: var(--accent-red);
+    box-shadow: 0 0 20px var(--accent-red-dim);
+}
