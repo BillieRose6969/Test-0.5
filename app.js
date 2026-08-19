@@ -5,7 +5,7 @@ const REFRESH_INTERVAL = 2 * 60 * 60 * 1000; // 2 horas en milisegundos
 
 const urlDetalleFallas = "https://docs.google.com/spreadsheets/d/100OcdQ6iZ83TxJVidgTWZkrQTbFSZhmaY8yBk48s78o/gviz/tq?tqx=out:csv&sheet=Detalle%20de%20Fallas%20por%20Procesador";
 const urlDetalleFallasAprobadas = "https://docs.google.com/spreadsheets/d/1msmEunitlatAq01F338OOc-iW5RSbSL-fTtXeHk9AXg/gviz/tq?tqx=out:csv&sheet=Motor%20de%20datos%20(Aprobadas)%20NO%20TOCAR";
-const urlEvidencias = "https://script.google.com/macros/s/AKfycbw5zZrsSEm2LWuLWngp98zEPNpbXul7KOfcUmKdssUo7tWLxjOP8DjYVARAwYkFVTb2/exec";
+const urlEvidencias = "https://script.google.com/macros/s/AKfycbxgxjbOlT8W6Bb_Vj84M3_JSFCwkk7z94SOO3xLQtdgRyrB4qEfMAOrTl8tQJtjFZws/exec";
 
 // Variables globales para guardar los datos
 let datosAprobadas = []; 
