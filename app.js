@@ -1,7 +1,7 @@
 // Configuración
 const urlAprobadas = "https://docs.google.com/spreadsheets/d/1msmEunitlatAq01F338OOc-iW5RSbSL-fTtXeHk9AXg/gviz/tq?tqx=out:csv&sheet=TOTAL%20PARCIAL";
 const urlEliminadas = "https://docs.google.com/spreadsheets/d/100OcdQ6iZ83TxJVidgTWZkrQTbFSZhmaY8yBk48s78o/gviz/tq?tqx=out:csv&sheet=Resumen%20de%20Errores";
-const REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutos en milisegundos
+const REFRESH_INTERVAL = 2 * 60 * 60 * 1000; // 2 horas en milisegundos
 
 const urlDetalleFallas = "https://docs.google.com/spreadsheets/d/100OcdQ6iZ83TxJVidgTWZkrQTbFSZhmaY8yBk48s78o/gviz/tq?tqx=out:csv&sheet=Detalle%20de%20Fallas%20por%20Procesador";
 const urlDetalleFallasAprobadas = "https://docs.google.com/spreadsheets/d/1msmEunitlatAq01F338OOc-iW5RSbSL-fTtXeHk9AXg/gviz/tq?tqx=out:csv&sheet=Motor%20de%20datos%20(Aprobadas)%20NO%20TOCAR";
@@ -23,15 +23,27 @@ let chartFallasAprobadas = null;
 let currentImages = [];
 let currentImageIndex = 0;
 
+let isFetching = false; // Previene múltiples descargas simultáneas
+
 // Inicialización
 document.addEventListener('DOMContentLoaded', () => {
     // Cyberpunk Chart Styles
     Chart.defaults.color = '#8b8d96';
     Chart.defaults.font.family = 'Rajdhani, sans-serif';
 
-    cargarDatos();
+    // Carga inicial (usa caché si está disponible y es reciente)
+    cargarDatos(false);
     
-    setInterval(cargarDatos, REFRESH_INTERVAL);
+    // Intervalo de fondo: fuerza la actualización (ignora el caché) cada 2 horas
+    setInterval(() => cargarDatos(true), REFRESH_INTERVAL);
+
+    // Configurar botón de actualización manual
+    const btnRefresh = document.getElementById('btnForceRefresh');
+    if (btnRefresh) {
+        btnRefresh.addEventListener('click', () => {
+            cargarDatos(true); 
+        });
+    }
 
     document.getElementById('procesadorSelect').addEventListener('change', actualizarDetalles);
 
@@ -117,10 +129,9 @@ function actualizarImagenModal() {
     img.alt = name;
     
     // --- LÓGICA DE ZOOM CON RUEDA Y MOVIMIENTO ---
-    let currentZoom = 2; // Nivel de zoom inicial al pasar el mouse
+    let currentZoom = 2;
 
     img.addEventListener('mousemove', function(e) {
-        // Usamos offsetX/Y para que sea relativo a la imagen sin transformar, evita saltos
         const xPercent = (e.offsetX / this.offsetWidth) * 100;
         const yPercent = (e.offsetY / this.offsetHeight) * 100;
         
@@ -129,15 +140,14 @@ function actualizarImagenModal() {
     });
 
     img.addEventListener('wheel', function(e) {
-        e.preventDefault(); // Evita que la página haga scroll al girar la rueda
+        e.preventDefault(); 
         
         if (e.deltaY < 0) {
-            currentZoom += 0.5; // Zoom in
+            currentZoom += 0.5; 
         } else {
-            currentZoom -= 0.5; // Zoom out
+            currentZoom -= 0.5; 
         }
         
-        // Limitamos el zoom entre 1 (normal) y 10 (máximo)
         if (currentZoom < 1) currentZoom = 1;
         if (currentZoom > 10) currentZoom = 10;
         
@@ -145,7 +155,7 @@ function actualizarImagenModal() {
     });
 
     img.addEventListener('mouseleave', function() {
-        currentZoom = 2; // Reiniciamos el nivel de zoom para la próxima vez
+        currentZoom = 2; 
         this.style.transformOrigin = 'center center';
         this.style.transform = 'scale(1)';
     });
@@ -155,7 +165,6 @@ function actualizarImagenModal() {
     titleLabel.textContent = name;
     titleLabel.className = "modal-image-title";
 
-    // Fallback if image fails to load
     img.onerror = () => {
         img.style.display = 'none';
         titleLabel.style.display = 'none';
@@ -202,11 +211,10 @@ function normalizarNombre(nombre) {
 
 function registrarNombreOriginal(nombreNormalizado, nombreOriginal) {
     if (!nombresMap[nombreNormalizado]) {
-        // Reemplazamos los puntos por un ESPACIO, quitamos guiones iniciales y normalizamos espacios múltiples
         let nombreLimpio = nombreOriginal
-            .replace(/\./g, ' ')          // Cambia puntos por espacios
-            .replace(/^[-]+/, '')         // Quita guiones al principio
-            .replace(/\s+/g, ' ')         // Si quedaron dobles espacios, los convierte en uno solo
+            .replace(/\./g, ' ')          
+            .replace(/^[-]+/, '')         
+            .replace(/\s+/g, ' ')         
             .trim()
             .toUpperCase();
             
@@ -214,9 +222,39 @@ function registrarNombreOriginal(nombreNormalizado, nombreOriginal) {
     }
 }
 
-async function cargarDatos() {
+// --- SISTEMA DE CACHÉ Y CARGA DE DATOS (ESPERA INFINITA SEGURA) ---
+async function cargarDatos(forzarActualizacion = false) {
+    if (isFetching) return; // Si ya está descargando, ignora cualquier otro clic al botón
+    
+    const CACHE_KEY = 'arasakaDashboardDatos';
+    const CACHE_TIME_KEY = 'arasakaDashboardTimestamp';
+    
+    // Revisar si tenemos datos en el caché y si siguen vigentes
+    if (!forzarActualizacion) {
+        const cachedData = localStorage.getItem(CACHE_KEY);
+        const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
+        
+        if (cachedData && cachedTime) {
+            const age = Date.now() - parseInt(cachedTime);
+            if (age < REFRESH_INTERVAL) {
+                try {
+                    const data = JSON.parse(cachedData);
+                    procesarDatos(data.aprobadas, data.eliminadas, data.detalleFallas, data.detalleFallasAprobadas, data.evidencias);
+                    actualizarSelect();
+                    renderizarGraficos();
+                    actualizarDetalles();
+                    return; 
+                } catch (e) {
+                    console.warn("Error leyendo caché, se volverán a descargar los datos", e);
+                }
+            }
+        }
+    }
+
     const overlay = document.getElementById('loadingOverlay');
     if (overlay) overlay.style.display = 'flex';
+    
+    isFetching = true; // Bloqueamos la app indicando que empezamos a cargar (esperará lo necesario)
 
     try {
         const [aprobadas, eliminadas, detalleFallas, detalleFallasAprobadas, evidencias] = await Promise.all([
@@ -230,14 +268,27 @@ async function cargarDatos() {
             })
         ]);
         
+        // Guardar en caché para la próxima recarga rápida
+        try {
+            const datosParaGuardar = {
+                aprobadas, eliminadas, detalleFallas, detalleFallasAprobadas, evidencias
+            };
+            localStorage.setItem(CACHE_KEY, JSON.stringify(datosParaGuardar));
+            localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+        } catch (e) {
+            console.warn("No se pudo guardar en caché:", e);
+        }
+        
         procesarDatos(aprobadas, eliminadas, detalleFallas, detalleFallasAprobadas, evidencias);
         actualizarSelect();
         renderizarGraficos();
-        actualizarDetalles(); // Forzar update si hay uno seleccionado
+        actualizarDetalles(); 
     } catch (error) {
         console.error("Error al cargar los datos:", error);
+        alert("⏱️ Hubo un error de conexión con Google. Por favor, volvé a intentarlo.");
     } finally {
-        if (overlay) overlay.style.display = 'none';
+        isFetching = false; // Liberamos la bandera para que se pueda volver a clickear si se desea
+        if (overlay) overlay.style.display = 'none'; // Nos aseguramos SIEMPRE de ocultar la pantalla negra
     }
 }
 
@@ -331,7 +382,6 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas, csvFallasAprobada
     let fallaColIndex = -1;
     let contadorColIndex = -1;
 
-    // Buscar Diccionario de Siglas si existe en las ultimas columnas
     let diccionarioSiglas = {};
     for (let i = 0; i < csvFallasAprobadas.length; i++) {
         const row = csvFallasAprobadas[i];
@@ -368,7 +418,7 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas, csvFallasAprobada
                         lastAprobadasNorm = normalizarNombre(nombrePuro);
                         registrarNombreOriginal(lastAprobadasNorm, nombrePuro);
                     } else if (nombrePuro.includes("TOTAL GENERAL") || nombrePuro.includes("Total general")) {
-                        lastAprobadasNorm = ""; // Si es total general, ignoramos
+                        lastAprobadasNorm = ""; 
                     }
                 }
 
@@ -407,18 +457,9 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas, csvFallasAprobada
 }
 
 function generarColores(cantidad) {
-    // Cyberpunk Arasaka Red/Grey Palette
     const colores = [
-        '#ff2a2a', // Arasaka Red
-        '#8b0000', // Dark Red
-        '#4a0000', // Very Dark Red
-        '#ff4a4a', // Bright Red
-        '#15161a', // Lead Grey
-        '#2a2b33', // Border Grey
-        '#e2e2e5', // Text White
-        '#8b8d96', // Text Muted
-        '#ff7f7f', // Light Red
-        '#3a0000'  // Deep Maroon
+        '#ff2a2a', '#8b0000', '#4a0000', '#ff4a4a', '#15161a',
+        '#2a2b33', '#e2e2e5', '#8b8d96', '#ff7f7f', '#3a0000'
     ];
     let result = [];
     for(let i=0; i<cantidad; i++) {
@@ -428,13 +469,11 @@ function generarColores(cantidad) {
 }
 
 function renderizarGraficos() {
-    // 1. Gráfico Presunciones Mal Aprobadas
     const aprobadasSorted = [...datosAprobadas].sort((a, b) => b.cantidad - a.cantidad).slice(0, 10);
     const labelsAprobadas = aprobadasSorted.map(d => nombresMap[d.nombreNorm] || d.nombreNorm);
     const dataAprobadas = aprobadasSorted.map(d => d.cantidad);
 
     const ctxAprobadas = document.getElementById('aprobadasChart').getContext('2d');
-    
     const configAprobadas = {
         type: 'pie',
         data: {
@@ -446,22 +485,14 @@ function renderizarGraficos() {
                 borderColor: '#15161a'
             }]
         },
-        options: {
-            color: '#e2e2e5',
-            responsive: true,
-            plugins: {
-                legend: { position: 'bottom', labels: { boxWidth: 12 } }
-            }
-        }
+        options: { color: '#e2e2e5', responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } }
     };
 
-    // 2. Gráfico Presunciones Mal Eliminadas
     const eliminadasSorted = [...datosEliminadas].sort((a, b) => b.cantidad - a.cantidad).slice(0, 10);
     const labelsEliminadas = eliminadasSorted.map(d => nombresMap[d.nombreNorm] || d.nombreNorm);
     const dataEliminadas = eliminadasSorted.map(d => d.cantidad);
 
     const ctxEliminadas = document.getElementById('eliminadasChart').getContext('2d');
-    
     const configEliminadas = {
         type: 'pie',
         data: {
@@ -473,16 +504,9 @@ function renderizarGraficos() {
                 borderColor: '#15161a'
             }]
         },
-        options: {
-            color: '#e2e2e5',
-            responsive: true,
-            plugins: {
-                legend: { position: 'bottom', labels: { boxWidth: 12 } }
-            }
-        }
+        options: { color: '#e2e2e5', responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } }
     };
 
-    // 3. Gráfico Top 10 Fallas (Mal Aprobadas)
     let fallasArray = [];
     for (let f in totalesFallasAprobadas) {
         if(totalesFallasAprobadas[f] > 0) {
@@ -496,7 +520,6 @@ function renderizarGraficos() {
     const dataFallas = topFallas.map(f => f.cantidad);
 
     const ctxFallasAprobadas = document.getElementById('fallasAprobadasChart').getContext('2d');
-    
     const configFallasAprobadas = {
         type: 'pie',
         data: {
@@ -508,13 +531,7 @@ function renderizarGraficos() {
                 borderColor: '#15161a'
             }]
         },
-        options: {
-            color: '#e2e2e5',
-            responsive: true,
-            plugins: {
-                legend: { position: 'bottom', labels: { boxWidth: 12 } }
-            }
-        }
+        options: { color: '#e2e2e5', responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } }
     };
 
     if (chartAprobadas) chartAprobadas.destroy();
@@ -531,7 +548,6 @@ function actualizarSelect() {
     const valorActual = select.value;
     select.innerHTML = '<option value="">-- Seleccione --</option>';
 
-    // Ordenar los nombres visibles alfabéticamente
     let todosNombres = Object.keys(nombresMap).sort((a, b) => {
         return nombresMap[a].localeCompare(nombresMap[b]);
     });
@@ -565,14 +581,12 @@ function actualizarDetalles() {
     if(fallasWrapper) fallasWrapper.style.display = 'flex';
     document.getElementById('detailsName').textContent = nombresMap[norm] || norm;
 
-    // Totales
     const dAprob = datosAprobadas.find(d => d.nombreNorm === norm);
     document.getElementById('statAprobadas').textContent = dAprob ? dAprob.cantidad : 0;
     
     const dElim = datosEliminadas.find(d => d.nombreNorm === norm);
     document.getElementById('statEliminadas').textContent = dElim ? dElim.cantidad : 0;
 
-    // Obtener detalles de fallas
     const fallasAprobadasRaw = datosDetalleFallasAprobadas[norm] || {};
     const fallasEliminadas = datosDetalleFallas[norm] || [];
     
@@ -592,7 +606,6 @@ function actualizarDetalles() {
     
     let evidencias = evidenciasMap[norm] || { aprobadas: [], eliminadas: [] };
 
-    // Llenar eliminadas
     if (hayEliminadas || evidencias.eliminadas.length > 0) {
         if(fallasContainer) fallasContainer.style.display = 'block';
         if(fallasList) fallasList.innerHTML = ''; 
@@ -619,7 +632,6 @@ function actualizarDetalles() {
         if(fallasContainer) fallasContainer.style.display = 'none';
     }
 
-    // Llenar aprobadas
     if (hayAprobadas || evidencias.aprobadas.length > 0) {
         if(fallasContainerAprobadas) fallasContainerAprobadas.style.display = 'block';
         if(fallasListAprobadas) fallasListAprobadas.innerHTML = ''; 
@@ -645,4 +657,39 @@ function actualizarDetalles() {
     } else {
         if(fallasContainerAprobadas) fallasContainerAprobadas.style.display = 'none';
     }
+}
+
+// --- SISTEMA DE FONDO GLITCH ---
+setInterval(generarGlitchNombre, 1200); // Aparece un destello cada 1.2 segundos
+
+function generarGlitchNombre() {
+    const container = document.getElementById('glitch-background');
+    if (!container) return;
+
+    const nombres = Object.values(nombresMap);
+    // Si todavía no hay nombres cargados, no hacemos nada
+    if (nombres.length === 0) return;
+
+    // Elegir un nombre al azar
+    const randomName = nombres[Math.floor(Math.random() * nombres.length)];
+    
+    const span = document.createElement('span');
+    span.className = 'glitch-name';
+    span.textContent = randomName;
+    
+    // Posición aleatoria en la pantalla (0% a 90% para que no se salga por los bordes)
+    const x = Math.random() * 90;
+    const y = Math.random() * 90;
+    span.style.left = `${x}vw`;
+    span.style.top = `${y}vh`;
+    
+    // Tamaño de fuente aleatorio para más variedad (entre 1rem y 3rem)
+    span.style.fontSize = `${Math.random() * 2 + 1}rem`;
+    
+    container.appendChild(span);
+
+    // Limpiar el elemento del DOM después de que termine la animación (800ms)
+    setTimeout(() => {
+        span.remove();
+    }, 800);
 }
