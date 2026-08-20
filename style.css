@@ -1,3 +1,6 @@
+/* Importar fuentes cyberpunk de Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;600;700&family=Syncopate:wght@400;700&display=swap');
+
 :root {
     /* Paleta Arasaka Corporate */
     --bg-main: #0a0a0c;
@@ -16,8 +19,7 @@
     --font-mono: 'Consolas', 'Courier New', monospace;
 }
 
-/* Importar fuentes cyberpunk de Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;600;700&family=Syncopate:wght@400;700&display=swap');
+
 
 * {
     box-sizing: border-box;
