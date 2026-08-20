@@ -693,3 +693,30 @@ function generarGlitchNombre() {
         span.remove();
     }, 800);
 }
+
+// Bloquear clic derecho
+document.addEventListener('contextmenu', event => event.preventDefault());
+
+// Bloquear atajos de teclado para herramientas de desarrollador
+document.addEventListener('keydown', function(e) {
+    // Bloquear F12
+    if(e.keyCode == 123) {
+        e.preventDefault();
+        return false;
+    }
+    // Bloquear Ctrl+Shift+I (Windows) o Cmd+Option+I (Mac)
+    if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) {
+        e.preventDefault();
+        return false;
+    }
+    // Bloquear Ctrl+Shift+J (Consola)
+    if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) {
+        e.preventDefault();
+        return false;
+    }
+    // Bloquear Ctrl+U (Código fuente)
+    if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) {
+        e.preventDefault();
+        return false;
+    }
+});
