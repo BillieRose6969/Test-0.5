@@ -49,8 +49,19 @@
 
         <section class="individual-stats card">
             <h2>Rendimiento Individual</h2>
+            
             <div class="selector-container">
-                <label for="procesadorSelect">Seleccione un procesador: </label>
+                <!-- Buscador Arasaka con Menú Flotante -->
+                <div class="search-container-wrapper">
+                    <div class="search-container">
+                        <input type="text" id="buscadorProcesadores" placeholder="> BUSCAR PROCESADOR..." autocomplete="off">
+                        <!-- Esta es la tarjetita que aparecerá mágicamente -->
+                        <ul id="sugerenciasBusqueda" class="sugerencias-box" style="display: none;"></ul>
+                    </div>
+                </div>
+
+                <!-- Menú desplegable clásico activado como opción secundaria -->
+                <p style="color: var(--text-muted); margin-bottom: 10px; font-size: 0.85rem; text-transform: uppercase;">-- O seleccione del directorio --</p>
                 <select id="procesadorSelect">
                     <option value="">-- Cargar y Seleccione --</option>
                 </select>
