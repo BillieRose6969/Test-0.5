@@ -5,7 +5,7 @@ const REFRESH_INTERVAL = 2 * 60 * 60 * 1000; // 2 horas en milisegundos
 
 const urlDetalleFallas = "https://docs.google.com/spreadsheets/d/100OcdQ6iZ83TxJVidgTWZkrQTbFSZhmaY8yBk48s78o/gviz/tq?tqx=out:csv&sheet=Detalle%20de%20Fallas%20por%20Procesador";
 const urlDetalleFallasAprobadas = "https://docs.google.com/spreadsheets/d/1msmEunitlatAq01F338OOc-iW5RSbSL-fTtXeHk9AXg/gviz/tq?tqx=out:csv&sheet=Motor%20de%20datos%20(Aprobadas)%20NO%20TOCAR";
-const urlEvidencias = "https://script.google.com/macros/s/AKfycbz5qer19HRFkO9L8lwMZNY1ScBKjZINBklMxM_SkJ4bkVlL_VIwXA2QSVhSDUi7INry/exec";
+const urlEvidencias = "https://script.google.com/macros/s/AKfycbzmmfhmhTI1XxGYFB_oC9yEqukHKDBZftD2P2DAXk45IDcZnkLj7HitmFedD2oxpSy7/exec";
 
 // Variables globales para guardar los datos
 let datosAprobadas = []; 
@@ -23,21 +23,17 @@ let chartFallasAprobadas = null;
 let currentImages = [];
 let currentImageIndex = 0;
 
-let isFetching = false; // Previene múltiples descargas simultáneas
+let isFetching = false; 
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', () => {
-    // Cyberpunk Chart Styles
     Chart.defaults.color = '#8b8d96';
     Chart.defaults.font.family = 'Rajdhani, sans-serif';
 
-    // Carga inicial (usa caché si está disponible y es reciente)
     cargarDatos(false);
     
-    // Intervalo de fondo: fuerza la actualización (ignora el caché) cada 2 horas
     setInterval(() => cargarDatos(true), REFRESH_INTERVAL);
 
-    // Configurar botón de actualización manual
     const btnRefresh = document.getElementById('btnForceRefresh');
     if (btnRefresh) {
         btnRefresh.addEventListener('click', () => {
@@ -45,7 +41,60 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    document.getElementById('procesadorSelect').addEventListener('change', actualizarDetalles);
+    // --- MOTOR DEL BUSCADOR FLOTANTE ARASAKA ---
+    const buscador = document.getElementById('buscadorProcesadores');
+    const sugerenciasBox = document.getElementById('sugerenciasBusqueda');
+    const select = document.getElementById('procesadorSelect');
+
+    if (buscador && sugerenciasBox && select) {
+        
+        // Si alguien usa el menú clásico, limpiamos el buscador y mostramos los datos
+        select.addEventListener('change', () => {
+            buscador.value = ''; // Vacía la barra roja
+            actualizarDetalles(); // Carga los gráficos y fotos
+        });
+
+        buscador.addEventListener('input', (e) => {
+            const textoBusqueda = e.target.value.toLowerCase().trim();
+            sugerenciasBox.innerHTML = ''; 
+
+            if (textoBusqueda === '') {
+                sugerenciasBox.style.display = 'none';
+                return;
+            }
+
+            const nombresFiltrados = Object.keys(nombresMap)
+                .sort((a, b) => nombresMap[a].localeCompare(nombresMap[b]))
+                .filter(norm => nombresMap[norm].toLowerCase().includes(textoBusqueda));
+
+            if (nombresFiltrados.length > 0) {
+                sugerenciasBox.style.display = 'block';
+                
+                nombresFiltrados.forEach(norm => {
+                    const li = document.createElement('li');
+                    li.textContent = nombresMap[norm];
+                    
+                    li.addEventListener('click', () => {
+                        buscador.value = nombresMap[norm]; 
+                        sugerenciasBox.style.display = 'none'; 
+                        
+                        select.value = norm;
+                        actualizarDetalles(); 
+                    });
+                    
+                    sugerenciasBox.appendChild(li);
+                });
+            } else {
+                sugerenciasBox.style.display = 'none';
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!buscador.contains(e.target) && !sugerenciasBox.contains(e.target)) {
+                sugerenciasBox.style.display = 'none';
+            }
+        });
+    }
 
     const modal = document.getElementById("imageModal");
     const spanClose = document.getElementsByClassName("close-modal")[0];
@@ -54,7 +103,6 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.style.display = "none";
     }
 
-    // Cerrar modal haciendo clic afuera
     window.onclick = function(event) {
         if (event.target === modal) {
             modal.style.display = "none";
@@ -82,7 +130,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Convertimos URLs de Drive al formato directo
 function convertirUrlDrive(url) {
     if (!url) return "";
     let driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
@@ -128,7 +175,6 @@ function actualizarImagenModal() {
     img.src = url;
     img.alt = name;
     
-    // --- LÓGICA DE ZOOM CON RUEDA Y MOVIMIENTO ---
     let currentZoom = 2;
 
     img.addEventListener('mousemove', function(e) {
@@ -159,7 +205,6 @@ function actualizarImagenModal() {
         this.style.transformOrigin = 'center center';
         this.style.transform = 'scale(1)';
     });
-    // ----------------------------------------------
 
     const titleLabel = document.createElement("p");
     titleLabel.textContent = name;
@@ -205,31 +250,124 @@ function normalizarNombre(nombre) {
     if (!nombre) return "";
     let norm = nombre.replace(/^[-]+/, '').replace(/[.,]/g, ' ').trim().toLowerCase();
     let palabras = norm.split(/\s+/).filter(p => p.length > 0);
-    palabras.sort();
-    return palabras.join(" ");
+    
+    let nombreUnificado = palabras.join(" ");
+
+    const aliases = {
+        "saldanio tomas": "saldaño tomas",
+        "saldaño thomas": "saldaño tomas",
+        "tomas saldanio": "saldaño tomas",
+        "agustin burrieza": "burrieza agustin",
+        "agustin gerez": "gerez agustin",
+        "agustin viscarra": "viscarra agustin",
+        "alan castrilli": "castrilli alan",
+        "alan tramannoni": "tramannoni alan",
+        "alberto marino": "marino alberto",
+        "aldana fleitas": "fleitas aldana",
+        "alejandra hidalgo": "hidalgo alejandra",
+        "alexander maleckar": "maleckar alexander",
+        "andrea tesone": "tesone andrea",
+        "augusto marchese": "marchese augusto",
+        "aylen gherardi": "gherardi aylen",
+        "barbara loza": "loza barbara",
+        "benjamin martinez": "martinez benjamin",
+        "bruno carabajal": "carabajal bruno",
+        "camila humbert": "humbert camila",
+        "camila rollin": "rollin camila",
+        "celeste vega": "vega celeste",
+        "cristhoffer hernandez": "hernandez cristhoffer",
+        "cristopher roldan": "roldan cristopher",
+        "danyetza sanabria": "sanabria danyetza",
+        "diana martinez": "martinez diana",
+        "emily billordo": "billordo emily",
+        "enzo benito": "benito enzo",
+        "erica paijes": "paijes erica",
+        "evelin gonzalez": "gonzalez evelin",
+        "ezequiel wagner": "wagner ezequiel",
+        "facundo moreno": "moreno facundo",
+        "guido goyena": "goyena guido",
+        "ignacio naya": "naya ignacio",
+        "ivana rodriguez": "rodriguez ivana",
+        "jacqueline vivas": "vivas jacqueline",
+        "jennifer baltazar": "baltazar jennifer",
+        "jeremias bagini": "bagini jeremias",
+        "jonathan pereyra": "pereyra jonathan",
+        "jorge fernandez": "fernandez jorge",
+        "juan ozorio": "ozorio juan",
+        "juana correa": "correa juana",
+        "julia zattara": "zattara julia",
+        "julieta iniguez": "iniguez julieta",
+        "julieta mastorizzo": "mastorizzo julieta",
+        "justin orellana": "orellana justin",
+        "lautaro filchel": "filchel lautaro",
+        "leandro martinez": "martinez leandro",
+        "leon pastoruti": "pastoruti leon",
+        "liana maidana": "maidana liana",
+        "lisa senradiamante": "senradiamante lisa",
+        "lourdes caminos": "caminos lourdes",
+        "lucas esquivel": "esquivel lucas",
+        "lucas flores": "flores lucas",
+        "lucas pariente": "pariente lucas",
+        "manuel fontana": "fontana manuel",
+        "marcos fernandez": "fernandez marcos",
+        "marcos pereyra": "pereyra marcos",
+        "maria fennema": "fennema maria",
+        "mariana pepek": "pepek mariana",
+        "marlene navarrete": "navarrete marlene",
+        "matias gonzalez": "gonzalez matias",
+        "matias katalinich": "katalinich matias",
+        "matias panteon": "panteon matias",
+        "matias rovira": "rovira matias",
+        "matias torrez": "torrez matias",
+        "matias vernola": "vernola matias",
+        "maximo arevalo": "arevalo maximo",
+        "mayra benitez": "benitez mayra",
+        "melany lauro": "lauro melany",
+        "milagros grosky": "grosky milagros",
+        "noelia errobidart": "errobidart noelia",
+        "octavio camacho": "camacho octavio",
+        "paloma pirsic": "pirsic paloma",
+        "rocio lelliza": "lelliza rocio",
+        "romina moller": "moller romina",
+        "santiago guerreros": "guerreros santiago",
+        "sebastian correa": "correa sebastian",
+        "sofia lucas": "lucas sofia",
+        "sofia verdoia": "verdoia sofia",
+        "tahiel romero": "romero tahiel",
+        "teodoro farias": "farias teodoro",
+        "thiago antunez": "antunez thiago",
+        "thiago valderrama": "valderrama thiago",
+        "tobias gallardo": "gallardo tobias",
+        "tomas cosenza": "cosenza tomas",
+        "tomas martinez": "martinez tomas",
+        "uriel cisneros": "cisneros uriel",
+        "valentin gonzalez": "gonzalez valentin",
+        "valentina giambrone": "giambrone valentina",
+        "veronica spoleti": "spoleti veronica",
+        "gianfranco ramirez": "ramirez gianfranco",
+        "guadalupe diaz": "diaz guadalupe",
+        "ivana rodrigues": "rodriguez ivana", 
+        "jcqueline vivas": "vivas jacqueline", 
+        "milton moller": "moller milton",
+        "ignacio rodriguez": "rodriguez ignacio",
+        "german pereyra": "pereyra german",
+    };
+
+    return aliases[nombreUnificado] || nombreUnificado;
 }
 
 function registrarNombreOriginal(nombreNormalizado, nombreOriginal) {
     if (!nombresMap[nombreNormalizado]) {
-        let nombreLimpio = nombreOriginal
-            .replace(/\./g, ' ')          
-            .replace(/^[-]+/, '')         
-            .replace(/\s+/g, ' ')         
-            .trim()
-            .toUpperCase();
-            
-        nombresMap[nombreNormalizado] = nombreLimpio;
+        nombresMap[nombreNormalizado] = nombreNormalizado.toUpperCase();
     }
 }
 
-// --- SISTEMA DE CACHÉ Y CARGA DE DATOS (ESPERA INFINITA SEGURA) ---
 async function cargarDatos(forzarActualizacion = false) {
-    if (isFetching) return; // Si ya está descargando, ignora cualquier otro clic al botón
+    if (isFetching) return; 
     
     const CACHE_KEY = 'arasakaDashboardDatos';
     const CACHE_TIME_KEY = 'arasakaDashboardTimestamp';
     
-    // Revisar si tenemos datos en el caché y si siguen vigentes
     if (!forzarActualizacion) {
         const cachedData = localStorage.getItem(CACHE_KEY);
         const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
@@ -242,7 +380,10 @@ async function cargarDatos(forzarActualizacion = false) {
                     procesarDatos(data.aprobadas, data.eliminadas, data.detalleFallas, data.detalleFallasAprobadas, data.evidencias);
                     actualizarSelect();
                     renderizarGraficos();
-                    actualizarDetalles();
+                    
+                    if (document.getElementById('buscadorProcesadores').value !== '') {
+                        actualizarDetalles();
+                    }
                     return; 
                 } catch (e) {
                     console.warn("Error leyendo caché, se volverán a descargar los datos", e);
@@ -254,7 +395,7 @@ async function cargarDatos(forzarActualizacion = false) {
     const overlay = document.getElementById('loadingOverlay');
     if (overlay) overlay.style.display = 'flex';
     
-    isFetching = true; // Bloqueamos la app indicando que empezamos a cargar (esperará lo necesario)
+    isFetching = true; 
 
     try {
         const [aprobadas, eliminadas, detalleFallas, detalleFallasAprobadas, evidencias] = await Promise.all([
@@ -268,7 +409,6 @@ async function cargarDatos(forzarActualizacion = false) {
             })
         ]);
         
-        // Guardar en caché para la próxima recarga rápida
         try {
             const datosParaGuardar = {
                 aprobadas, eliminadas, detalleFallas, detalleFallasAprobadas, evidencias
@@ -282,13 +422,16 @@ async function cargarDatos(forzarActualizacion = false) {
         procesarDatos(aprobadas, eliminadas, detalleFallas, detalleFallasAprobadas, evidencias);
         actualizarSelect();
         renderizarGraficos();
-        actualizarDetalles(); 
+        
+        if (document.getElementById('buscadorProcesadores').value !== '') {
+            actualizarDetalles();
+        }
     } catch (error) {
         console.error("Error al cargar los datos:", error);
         alert("⏱️ Hubo un error de conexión con Google. Por favor, volvé a intentarlo.");
     } finally {
-        isFetching = false; // Liberamos la bandera para que se pueda volver a clickear si se desea
-        if (overlay) overlay.style.display = 'none'; // Nos aseguramos SIEMPRE de ocultar la pantalla negra
+        isFetching = false; 
+        if (overlay) overlay.style.display = 'none'; 
     }
 }
 
@@ -312,7 +455,6 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas, csvFallasAprobada
     nombresMap = {};
     evidenciasMap = csvEvidencias || {};
 
-    // Procesar Presunciones Mal Aprobadas
     for (let i = 1; i < csvAprobadas.length; i++) {
         const row = csvAprobadas[i];
         if (row && row.length >= 2 && row[0] && row[0].trim() !== "" && row[0].trim() !== "OPERADORES") {
@@ -327,7 +469,6 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas, csvFallasAprobada
         }
     }
 
-    // Procesar Presunciones Mal Eliminadas
     for (let i = 1; i < csvEliminadas.length; i++) {
         const row = csvEliminadas[i];
         if (row && row.length >= 2 && row[0] && row[0].trim() !== "") {
@@ -342,7 +483,6 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas, csvFallasAprobada
         }
     }
 
-    // Procesar Detalle de Fallas (Mal Eliminadas)
     let lastEliminadasNorm = "";
     for (let i = 1; i < csvFallas.length; i++) {
         const row = csvFallas[i];
@@ -376,7 +516,6 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas, csvFallasAprobada
         }
     }
 
-    // Procesar Detalle de Fallas (Mal Aprobadas)
     let headerAprobadas = csvFallasAprobadas[0] || [];
     let procesadorColIndex = -1;
     let fallaColIndex = -1;
@@ -660,63 +799,41 @@ function actualizarDetalles() {
 }
 
 // --- SISTEMA DE FONDO GLITCH ---
-setInterval(generarGlitchNombre, 1200); // Aparece un destello cada 1.2 segundos
+setInterval(generarGlitchNombre, 1200); 
 
 function generarGlitchNombre() {
     const container = document.getElementById('glitch-background');
     if (!container) return;
 
     const nombres = Object.values(nombresMap);
-    // Si todavía no hay nombres cargados, no hacemos nada
     if (nombres.length === 0) return;
 
-    // Elegir un nombre al azar
     const randomName = nombres[Math.floor(Math.random() * nombres.length)];
     
     const span = document.createElement('span');
     span.className = 'glitch-name';
     span.textContent = randomName;
     
-    // Posición aleatoria en la pantalla (0% a 90% para que no se salga por los bordes)
     const x = Math.random() * 90;
     const y = Math.random() * 90;
     span.style.left = `${x}vw`;
     span.style.top = `${y}vh`;
     
-    // Tamaño de fuente aleatorio para más variedad (entre 1rem y 3rem)
     span.style.fontSize = `${Math.random() * 2 + 1}rem`;
     
     container.appendChild(span);
 
-    // Limpiar el elemento del DOM después de que termine la animación (800ms)
     setTimeout(() => {
         span.remove();
     }, 800);
 }
 
-// Bloquear clic derecho
+// --- SISTEMA ANTI-CURIOSOS BÁSICO ---
 document.addEventListener('contextmenu', event => event.preventDefault());
 
-// Bloquear atajos de teclado para herramientas de desarrollador
 document.addEventListener('keydown', function(e) {
-    // Bloquear F12
-    if(e.keyCode == 123) {
-        e.preventDefault();
-        return false;
-    }
-    // Bloquear Ctrl+Shift+I (Windows) o Cmd+Option+I (Mac)
-    if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) {
-        e.preventDefault();
-        return false;
-    }
-    // Bloquear Ctrl+Shift+J (Consola)
-    if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) {
-        e.preventDefault();
-        return false;
-    }
-    // Bloquear Ctrl+U (Código fuente)
-    if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) {
-        e.preventDefault();
-        return false;
-    }
+    if(e.keyCode == 123) { e.preventDefault(); return false; }
+    if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { e.preventDefault(); return false; }
+    if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) { e.preventDefault(); return false; }
+    if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { e.preventDefault(); return false; }
 });
