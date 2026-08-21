@@ -19,8 +19,6 @@
     --font-mono: 'Consolas', 'Courier New', monospace;
 }
 
-
-
 * {
     box-sizing: border-box;
     margin: 0;
@@ -32,7 +30,6 @@ body {
     background-color: var(--bg-main);
     color: var(--text-main);
     line-height: 1.6;
-    /* Patrón sutil de cuadrícula corporativa */
     background-image: 
         linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
@@ -83,18 +80,91 @@ header h1 {
     padding: 2rem 1rem;
 }
 
+/* --- BUSCADOR ARASAKA FLOTANTE --- */
+.search-container-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto 20px auto;
+}
+
+.search-container {
+    position: relative;
+    width: 100%;
+}
+
+#buscadorProcesadores {
+    width: 100%;
+    padding: 12px 15px;
+    background-color: #0a0a0a;
+    border: 1px solid var(--accent-red);
+    color: var(--accent-red);
+    font-family: var(--font-mono);
+    font-size: 16px;
+    outline: none;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+}
+
+#buscadorProcesadores::placeholder {
+    color: #550014;
+}
+
+#buscadorProcesadores:focus {
+    box-shadow: 0 0 15px rgba(255, 42, 42, 0.5);
+    background-color: #000000;
+}
+
+.sugerencias-box {
+    position: absolute;
+    top: 100%; 
+    left: 0;
+    width: 100%;
+    background-color: var(--bg-card);
+    border: 1px solid var(--accent-red);
+    border-top: none;
+    z-index: 1000;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.9);
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.sugerencias-box li {
+    padding: 12px 15px;
+    color: var(--text-main);
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    cursor: pointer;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.2s, color 0.2s;
+    text-align: left;
+}
+
+.sugerencias-box li:hover {
+    background-color: var(--accent-red);
+    color: var(--bg-main);
+    font-weight: bold;
+}
+
+.sugerencias-box::-webkit-scrollbar { width: 6px; }
+.sugerencias-box::-webkit-scrollbar-track { background: #000; }
+.sugerencias-box::-webkit-scrollbar-thumb { background: var(--accent-red); }
+
 /* Tarjetas Corporate */
 .card {
     background-color: var(--bg-card);
     border: 1px solid var(--border-color);
-    border-radius: 0; /* Cyberpunk no usa bordes redondos suaves */
+    border-radius: 0; 
     padding: 2rem;
     margin-bottom: 2rem;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
     position: relative;
 }
 
-/* Efecto borde de "esquina cortada" superior derecha */
 .card::before {
     content: '';
     position: absolute;
@@ -139,7 +209,7 @@ header h1 {
 .chart-wrapper {
     flex: 1 1 calc(33.333% - 20px);
     min-width: 300px;
-    background: #0d0d10; /* Fondo más oscuro para destacar gráficos */
+    background: #0d0d10; 
     padding: 1.5rem;
     border: 1px solid var(--border-color);
     position: relative;
@@ -162,15 +232,6 @@ header h1 {
     background: #0f1014;
     padding: 15px;
     border: 1px dashed var(--border-color);
-}
-
-.selector-container label {
-    font-weight: 600;
-    color: var(--text-muted);
-    margin-right: 10px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-size: 0.9rem;
 }
 
 select {
@@ -361,7 +422,7 @@ select:focus, select:hover {
     top: 0; left: 0; width: 100%; height: 100%;
     background-color: rgba(10, 10, 12, 0.9);
     z-index: 9999;
-    display: none; /* Flex by default when active */
+    display: none; 
     flex-direction: column;
     justify-content: center;
     align-items: center;
@@ -419,7 +480,6 @@ select:focus, select:hover {
     box-shadow: 0 0 30px rgba(255, 42, 42, 0.15);
 }
 
-/* Detalles estéticos del modal */
 .modal-content::before, .modal-content::after {
     content: '';
     position: absolute;
@@ -473,7 +533,7 @@ select:focus, select:hover {
     background: #000;
     border: 1px solid var(--border-color);
     position: relative;
-    overflow: hidden; /* Esto asegura que el zoom no se desborde */
+    overflow: hidden; 
 }
 
 .modal-image-container {
@@ -486,8 +546,8 @@ select:focus, select:hover {
     max-height: 60vh;
     object-fit: contain;
     border-bottom: 2px solid var(--accent-red);
-    cursor: crosshair; /* Cursor para indicar que se puede interactuar */
-    transition: transform 0.1s ease-out; /* Transición suave para la rueda del mouse */
+    cursor: crosshair; 
+    transition: transform 0.1s ease-out; 
 }
 
 .modal-image-title {
@@ -546,8 +606,8 @@ select:focus, select:hover {
 .glitch-bg {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
-    pointer-events: none; /* Para que los nombres no bloqueen los clics del mouse */
-    z-index: -1;          /* Detrás de todas las tarjetas */
+    pointer-events: none; 
+    z-index: -1;          
     overflow: hidden;
 }
 
@@ -558,9 +618,8 @@ select:focus, select:hover {
     font-weight: bold;
     text-transform: uppercase;
     white-space: nowrap;
-    opacity: 0; /* Oculto por defecto */
+    opacity: 0; 
     text-shadow: 2px 0px 5px rgba(255, 42, 42, 0.8), -2px 0px 2px #fff;
-    /* La animación dura 0.8 segundos en total */
     animation: glitch-flash 0.8s linear forwards; 
 }
 
