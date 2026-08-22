@@ -31,6 +31,19 @@
     <main class="container">
         <section class="global-stats card">
             <h2>Errores Globales</h2>
+            
+            <!-- TARJETA SUTIL DE TOTALES GLOBALES -->
+            <div class="global-totals-bar">
+                <div class="total-item">
+                    <span class="total-label">Total Mal Aprobadas:</span>
+                    <span id="globalTotalAprobadas" class="total-number">0</span>
+                </div>
+                <div class="total-item">
+                    <span class="total-label">Total Mal Eliminadas:</span>
+                    <span id="globalTotalEliminadas" class="total-number">0</span>
+                </div>
+            </div>
+
             <div class="charts-container">
                 <div class="chart-wrapper">
                     <h3>Presunciones Mal Aprobadas (Por Procesador)</h3>
@@ -54,7 +67,7 @@
                 <!-- Buscador Arasaka con Menú Flotante -->
                 <div class="search-container-wrapper">
                     <div class="search-container">
-                        <input type="text" id="buscadorProcesadores" placeholder="> BUSCAR PROCESADOR..." autocomplete="off">
+                        <input type="text" id="buscadorProcesadores" placeholder="> BUSCAR PROCESADOR.EXE..." autocomplete="off">
                         <!-- Esta es la tarjetita que aparecerá mágicamente -->
                         <ul id="sugerenciasBusqueda" class="sugerencias-box" style="display: none;"></ul>
                     </div>
