@@ -1,13 +1,14 @@
 // Configuración
 const urlAprobadas = "https://docs.google.com/spreadsheets/d/1msmEunitlatAq01F338OOc-iW5RSbSL-fTtXeHk9AXg/gviz/tq?tqx=out:csv&sheet=TOTAL%20PARCIAL";
 const urlEliminadas = "https://docs.google.com/spreadsheets/d/100OcdQ6iZ83TxJVidgTWZkrQTbFSZhmaY8yBk48s78o/gviz/tq?tqx=out:csv&sheet=Resumen%20de%20Errores";
-const REFRESH_INTERVAL = 2 * 60 * 60 * 1000; // 2 horas en milisegundos
+const REFRESH_INTERVAL = 2 * 60 * 60 * 1000;
 
 const urlDetalleFallas = "https://docs.google.com/spreadsheets/d/100OcdQ6iZ83TxJVidgTWZkrQTbFSZhmaY8yBk48s78o/gviz/tq?tqx=out:csv&sheet=Detalle%20de%20Fallas%20por%20Procesador";
 const urlDetalleFallasAprobadas = "https://docs.google.com/spreadsheets/d/1msmEunitlatAq01F338OOc-iW5RSbSL-fTtXeHk9AXg/gviz/tq?tqx=out:csv&sheet=Motor%20de%20datos%20(Aprobadas)%20NO%20TOCAR";
-const urlEvidencias = "https://script.google.com/macros/s/AKfycbzmmfhmhTI1XxGYFB_oC9yEqukHKDBZftD2P2DAXk45IDcZnkLj7HitmFedD2oxpSy7/exec";
 
-// Variables globales para guardar los datos
+// --- CAMBIO CLAVE: Ahora leemos de tu Excel directo, NO del script temporal ---
+const urlEvidencias = "https://docs.google.com/spreadsheets/d/1msmEunitlatAq01F338OOc-iW5RSbSL-fTtXeHk9AXg/gviz/tq?tqx=out:csv&sheet=Base%20Evidencias%20(NO%20TOCAR)";
+
 let datosAprobadas = []; 
 let datosEliminadas = [];
 let datosDetalleFallas = {}; 
@@ -22,32 +23,25 @@ let chartFallasAprobadas = null;
 
 let currentImages = [];
 let currentImageIndex = 0;
-
 let isFetching = false; 
 
-// Inicialización
 document.addEventListener('DOMContentLoaded', () => {
     Chart.defaults.color = '#8b8d96';
     Chart.defaults.font.family = 'Rajdhani, sans-serif';
 
     cargarDatos(false);
-    
     setInterval(() => cargarDatos(true), REFRESH_INTERVAL);
 
     const btnRefresh = document.getElementById('btnForceRefresh');
     if (btnRefresh) {
-        btnRefresh.addEventListener('click', () => {
-            cargarDatos(true); 
-        });
+        btnRefresh.addEventListener('click', () => cargarDatos(true));
     }
 
-    // --- MOTOR DEL BUSCADOR FLOTANTE ARASAKA ---
     const buscador = document.getElementById('buscadorProcesadores');
     const sugerenciasBox = document.getElementById('sugerenciasBusqueda');
     const select = document.getElementById('procesadorSelect');
 
     if (buscador && sugerenciasBox && select) {
-        
         select.addEventListener('change', () => {
             buscador.value = ''; 
             actualizarDetalles(); 
@@ -68,19 +62,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (nombresFiltrados.length > 0) {
                 sugerenciasBox.style.display = 'block';
-                
                 nombresFiltrados.forEach(norm => {
                     const li = document.createElement('li');
                     li.textContent = nombresMap[norm];
-                    
                     li.addEventListener('click', () => {
                         buscador.value = nombresMap[norm]; 
                         sugerenciasBox.style.display = 'none'; 
-                        
                         select.value = norm;
                         actualizarDetalles(); 
                     });
-                    
                     sugerenciasBox.appendChild(li);
                 });
             } else {
@@ -97,16 +87,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const modal = document.getElementById("imageModal");
     const spanClose = document.getElementsByClassName("close-modal")[0];
-
-    spanClose.onclick = function() {
-        modal.style.display = "none";
-    }
-
-    window.onclick = function(event) {
-        if (event.target === modal) {
-            modal.style.display = "none";
-        }
-    }
+    spanClose.onclick = function() { modal.style.display = "none"; }
+    window.onclick = function(event) { if (event.target === modal) modal.style.display = "none"; }
 
     const prevBtn = document.getElementById('prevBtn');
     if (prevBtn) {
@@ -132,17 +114,11 @@ document.addEventListener('DOMContentLoaded', () => {
 function convertirUrlDrive(url) {
     if (!url) return "";
     let driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-    if (driveMatch && driveMatch[1]) {
-        return `https://lh3.googleusercontent.com/d/${driveMatch[1]}`;
-    }
+    if (driveMatch && driveMatch[1]) return `https://lh3.googleusercontent.com/d/${driveMatch[1]}`;
     let openMatch = url.match(/id=([a-zA-Z0-9_-]+)/);
-    if (openMatch && openMatch[1] && url.includes('drive.google.com')) {
-        return `https://lh3.googleusercontent.com/d/${openMatch[1]}`;
-    }
+    if (openMatch && openMatch[1] && url.includes('drive.google.com')) return `https://lh3.googleusercontent.com/d/${openMatch[1]}`;
     let ucMatch = url.match(/\/uc\?id=([a-zA-Z0-9_-]+)/);
-    if (ucMatch && ucMatch[1]) {
-        return `https://lh3.googleusercontent.com/d/${ucMatch[1]}`;
-    }
+    if (ucMatch && ucMatch[1]) return `https://lh3.googleusercontent.com/d/${ucMatch[1]}`;
     return url;
 }
 
@@ -179,23 +155,16 @@ function actualizarImagenModal() {
     img.addEventListener('mousemove', function(e) {
         const xPercent = (e.offsetX / this.offsetWidth) * 100;
         const yPercent = (e.offsetY / this.offsetHeight) * 100;
-        
         this.style.transformOrigin = `${xPercent}% ${yPercent}%`;
         this.style.transform = `scale(${currentZoom})`;
     });
 
     img.addEventListener('wheel', function(e) {
         e.preventDefault(); 
-        
-        if (e.deltaY < 0) {
-            currentZoom += 0.5; 
-        } else {
-            currentZoom -= 0.5; 
-        }
-        
+        if (e.deltaY < 0) currentZoom += 0.5; 
+        else currentZoom -= 0.5; 
         if (currentZoom < 1) currentZoom = 1;
         if (currentZoom > 10) currentZoom = 10;
-        
         this.style.transform = `scale(${currentZoom})`;
     });
 
@@ -212,7 +181,6 @@ function actualizarImagenModal() {
     img.onerror = () => {
         img.style.display = 'none';
         titleLabel.style.display = 'none';
-        
         const a = document.createElement('a');
         a.href = originalUrl;
         a.target = "_blank";
@@ -226,7 +194,6 @@ function actualizarImagenModal() {
     modalGallery.appendChild(container);
 
     if(counter) counter.textContent = `${currentImageIndex + 1} de ${currentImages.length}`;
-
     if(prevBtn) prevBtn.style.display = currentImages.length > 1 ? 'block' : 'none';
     if(nextBtn) nextBtn.style.display = currentImages.length > 1 ? 'block' : 'none';
 }
@@ -234,14 +201,10 @@ function actualizarImagenModal() {
 function abrirModal(titulo, evidenciasArray) {
     const modal = document.getElementById("imageModal");
     const modalTitle = document.getElementById("modalTitle");
-
     modalTitle.textContent = titulo;
-    
     currentImages = evidenciasArray || [];
     currentImageIndex = 0;
-    
     actualizarImagenModal();
-
     modal.style.display = "block";
 }
 
@@ -249,7 +212,6 @@ function normalizarNombre(nombre) {
     if (!nombre) return "";
     let norm = nombre.replace(/^[-]+/, '').replace(/[.,]/g, ' ').trim().toLowerCase();
     let palabras = norm.split(/\s+/).filter(p => p.length > 0);
-    
     let nombreUnificado = palabras.join(" ");
 
     const aliases = {
@@ -349,7 +311,8 @@ function normalizarNombre(nombre) {
         "jcqueline vivas": "vivas jacqueline", 
         "milton moller": "moller milton",
         "ignacio rodriguez": "rodriguez ignacio",
-        "german pereyra": "pereyra german"
+        "german pereyra": "pereyra german",
+        "hugo patiño": "patiño hugo"
     };
 
     return aliases[nombreUnificado] || nombreUnificado;
@@ -361,14 +324,11 @@ function registrarNombreOriginal(nombreNormalizado, nombreOriginal) {
     }
 }
 
-// --- NUEVO: CALCULAR TOTALES GLOBALES ---
 function actualizarTotalesGlobales() {
     let totalAprobadas = datosAprobadas.reduce((suma, d) => suma + d.cantidad, 0);
     let totalEliminadas = datosEliminadas.reduce((suma, d) => suma + d.cantidad, 0);
-
     const elAprobadas = document.getElementById('globalTotalAprobadas');
     const elEliminadas = document.getElementById('globalTotalEliminadas');
-
     if(elAprobadas) elAprobadas.textContent = totalAprobadas;
     if(elEliminadas) elEliminadas.textContent = totalEliminadas;
 }
@@ -397,9 +357,7 @@ async function cargarDatos(forzarActualizacion = false) {
                         actualizarDetalles();
                     }
                     return; 
-                } catch (e) {
-                    console.warn("Error leyendo caché, se volverán a descargar los datos", e);
-                }
+                } catch (e) { console.warn("Error leyendo caché", e); }
             }
         }
     }
@@ -410,38 +368,30 @@ async function cargarDatos(forzarActualizacion = false) {
     isFetching = true; 
 
     try {
-        const [aprobadas, eliminadas, detalleFallas, detalleFallasAprobadas, evidencias] = await Promise.all([
+        // --- CAMBIO: Ahora TODO se trae como CSV rapidísimo ---
+        const [aprobadas, eliminadas, detalleFallas, detalleFallasAprobadas, evidenciasCSV] = await Promise.all([
             fetchCSV(urlAprobadas),
             fetchCSV(urlEliminadas),
             fetchCSV(urlDetalleFallas),
             fetchCSV(urlDetalleFallasAprobadas),
-            fetch(urlEvidencias).then(res => res.json()).catch(err => {
-                console.error("Error cargando evidencias:", err);
-                return {};
-            })
+            fetchCSV(urlEvidencias) 
         ]);
         
         try {
-            const datosParaGuardar = {
-                aprobadas, eliminadas, detalleFallas, detalleFallasAprobadas, evidencias
-            };
+            const datosParaGuardar = { aprobadas, eliminadas, detalleFallas, detalleFallasAprobadas, evidencias: evidenciasCSV };
             localStorage.setItem(CACHE_KEY, JSON.stringify(datosParaGuardar));
             localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
-        } catch (e) {
-            console.warn("No se pudo guardar en caché:", e);
-        }
+        } catch (e) {}
         
-        procesarDatos(aprobadas, eliminadas, detalleFallas, detalleFallasAprobadas, evidencias);
+        procesarDatos(aprobadas, eliminadas, detalleFallas, detalleFallasAprobadas, evidenciasCSV);
         actualizarSelect();
         actualizarTotalesGlobales();
         renderizarGraficos();
         
-        if (document.getElementById('buscadorProcesadores').value !== '') {
-            actualizarDetalles();
-        }
+        if (document.getElementById('buscadorProcesadores').value !== '') actualizarDetalles();
     } catch (error) {
-        console.error("Error al cargar los datos:", error);
-        alert("⏱️ Hubo un error de conexión con Google. Por favor, volvé a intentarlo.");
+        console.error("Error al cargar:", error);
+        alert("⏱️ Hubo un error de conexión. Por favor, volvé a intentarlo.");
     } finally {
         isFetching = false; 
         if (overlay) overlay.style.display = 'none'; 
@@ -450,12 +400,7 @@ async function cargarDatos(forzarActualizacion = false) {
 
 function fetchCSV(url) {
     return new Promise((resolve, reject) => {
-        Papa.parse(url, {
-            download: true,
-            header: false,
-            complete: (results) => resolve(results.data),
-            error: (err) => reject(err)
-        });
+        Papa.parse(url, { download: true, header: false, complete: (results) => resolve(results.data), error: (err) => reject(err) });
     });
 }
 
@@ -466,7 +411,35 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas, csvFallasAprobada
     datosDetalleFallasAprobadas = {};
     totalesFallasAprobadas = {};
     nombresMap = {};
-    evidenciasMap = csvEvidencias || {};
+    
+    // --- CAMBIO: Parseo ultrarrápido del nuevo CSV de evidencias ---
+    evidenciasMap = {};
+    if (csvEvidencias && csvEvidencias.length > 1) {
+        for (let i = 1; i < csvEvidencias.length; i++) {
+            let row = csvEvidencias[i];
+            if (row && row.length >= 4) {
+                let procOriginal = row[0] ? row[0].trim() : "";
+                if (!procOriginal) continue;
+                
+                let procNorm = normalizarNombre(procOriginal);
+                registrarNombreOriginal(procNorm, procOriginal);
+                
+                let tipo = row[1] ? row[1].trim().toLowerCase() : "aprobadas";
+                let falla = row[2] ? row[2].trim() : "Evidencia";
+                let url = row[3] ? row[3].trim() : "";
+
+                if (!evidenciasMap[procNorm]) {
+                    evidenciasMap[procNorm] = { aprobadas: [], eliminadas: [] };
+                }
+                
+                if (tipo === 'aprobadas') {
+                    evidenciasMap[procNorm].aprobadas.push({ name: falla, url: url });
+                } else {
+                    evidenciasMap[procNorm].eliminadas.push({ name: falla, url: url });
+                }
+            }
+        }
+    }
 
     for (let i = 1; i < csvAprobadas.length; i++) {
         const row = csvAprobadas[i];
@@ -474,7 +447,6 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas, csvFallasAprobada
             const nombreOriginal = row[0].trim();
             const nombreNorm = normalizarNombre(nombreOriginal);
             const cantidad = parseInt(row[1]) || 0;
-            
             if (nombreOriginal.toUpperCase() !== "TOTAL GENERAL" && cantidad > 0) {
                 tempAprobadas[nombreNorm] = cantidad;
                 registrarNombreOriginal(nombreNorm, nombreOriginal);
@@ -488,7 +460,6 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas, csvFallasAprobada
             const nombreOriginal = row[0].trim();
             const nombreNorm = normalizarNombre(nombreOriginal);
             const cantidad = parseInt(row[1]) || 0;
-            
             if (nombreOriginal.toUpperCase() !== "TOTAL GENERAL" && cantidad > 0) {
                 tempEliminadas[nombreNorm] = cantidad;
                 registrarNombreOriginal(nombreNorm, nombreOriginal);
@@ -501,30 +472,20 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas, csvFallasAprobada
         const row = csvFallas[i];
         if (row && row.length >= 3) {
             let procesadorCell = row[0] ? row[0].trim() : "";
-            
             if (procesadorCell !== "") {
                 if (procesadorCell.toUpperCase() !== "TOTAL GENERAL") {
                     lastEliminadasNorm = normalizarNombre(procesadorCell);
                     registrarNombreOriginal(lastEliminadasNorm, procesadorCell);
-                } else {
-                    lastEliminadasNorm = "";
-                }
+                } else { lastEliminadasNorm = ""; }
             }
-
             const falla = row[1] ? row[1].trim() : "";
             const cantidad = parseInt(row[2]) || 0;
             
             if (lastEliminadasNorm !== "" && falla !== "" && cantidad > 0) {
-                if (!datosDetalleFallas[lastEliminadasNorm]) {
-                    datosDetalleFallas[lastEliminadasNorm] = [];
-                }
-                
+                if (!datosDetalleFallas[lastEliminadasNorm]) datosDetalleFallas[lastEliminadasNorm] = [];
                 let existente = datosDetalleFallas[lastEliminadasNorm].find(f => f.tipo === falla);
-                if (existente) {
-                    existente.cantidad += cantidad;
-                } else {
-                    datosDetalleFallas[lastEliminadasNorm].push({ tipo: falla, cantidad: cantidad });
-                }
+                if (existente) existente.cantidad += cantidad;
+                else datosDetalleFallas[lastEliminadasNorm].push({ tipo: falla, cantidad: cantidad });
             }
         }
     }
@@ -533,8 +494,8 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas, csvFallasAprobada
     let procesadorColIndex = -1;
     let fallaColIndex = -1;
     let contadorColIndex = -1;
-
     let diccionarioSiglas = {};
+    
     for (let i = 0; i < csvFallasAprobadas.length; i++) {
         const row = csvFallasAprobadas[i];
         if (row && row.length >= 10) {
@@ -548,13 +509,9 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas, csvFallasAprobada
 
     for (let i = 0; i < headerAprobadas.length; i++) {
         let col = headerAprobadas[i] ? headerAprobadas[i].toUpperCase().trim() : "";
-        if (col.includes("PROCESADOR") || col.includes("OPERADOR")) {
-            procesadorColIndex = i;
-        } else if (col.includes("DETALLE DE FALLAS") || col.includes("FALLAS DETECTADAS")) {
-            fallaColIndex = i;
-        } else if (col.includes("CONTADOR")) {
-            contadorColIndex = i;
-        }
+        if (col.includes("PROCESADOR") || col.includes("OPERADOR")) procesadorColIndex = i;
+        else if (col.includes("DETALLE DE FALLAS") || col.includes("FALLAS DETECTADAS")) fallaColIndex = i;
+        else if (col.includes("CONTADOR")) contadorColIndex = i;
     }
 
     if (procesadorColIndex !== -1 && fallaColIndex !== -1) {
@@ -579,25 +536,17 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas, csvFallasAprobada
 
                 if (contadorColIndex !== -1 && row[contadorColIndex]) {
                     const cant = parseInt(row[contadorColIndex]);
-                    if (!isNaN(cant)) {
-                        cantidadFalla = cant;
-                    }
+                    if (!isNaN(cant)) cantidadFalla = cant;
                 }
                 
                 if (lastAprobadasNorm !== "" && siglaError !== "" && !siglaError.includes("DETALLE DE FALLAS") && cantidadFalla > 0) {
                     let tipoErrorCompleto = diccionarioSiglas[siglaError] || siglaError;
                     
-                    if (!datosDetalleFallasAprobadas[lastAprobadasNorm]) {
-                        datosDetalleFallasAprobadas[lastAprobadasNorm] = {};
-                    }
-                    if (!datosDetalleFallasAprobadas[lastAprobadasNorm][tipoErrorCompleto]) {
-                        datosDetalleFallasAprobadas[lastAprobadasNorm][tipoErrorCompleto] = 0;
-                    }
+                    if (!datosDetalleFallasAprobadas[lastAprobadasNorm]) datosDetalleFallasAprobadas[lastAprobadasNorm] = {};
+                    if (!datosDetalleFallasAprobadas[lastAprobadasNorm][tipoErrorCompleto]) datosDetalleFallasAprobadas[lastAprobadasNorm][tipoErrorCompleto] = 0;
                     datosDetalleFallasAprobadas[lastAprobadasNorm][tipoErrorCompleto] += cantidadFalla;
                     
-                    if (!totalesFallasAprobadas[tipoErrorCompleto]) {
-                        totalesFallasAprobadas[tipoErrorCompleto] = 0;
-                    }
+                    if (!totalesFallasAprobadas[tipoErrorCompleto]) totalesFallasAprobadas[tipoErrorCompleto] = 0;
                     totalesFallasAprobadas[tipoErrorCompleto] += cantidadFalla;
                 }
             }
@@ -609,14 +558,9 @@ function procesarDatos(csvAprobadas, csvEliminadas, csvFallas, csvFallasAprobada
 }
 
 function generarColores(cantidad) {
-    const colores = [
-        '#ff2a2a', '#8b0000', '#4a0000', '#ff4a4a', '#15161a',
-        '#2a2b33', '#e2e2e5', '#8b8d96', '#ff7f7f', '#3a0000'
-    ];
+    const colores = ['#ff2a2a', '#8b0000', '#4a0000', '#ff4a4a', '#15161a', '#2a2b33', '#e2e2e5', '#8b8d96', '#ff7f7f', '#3a0000'];
     let result = [];
-    for(let i=0; i<cantidad; i++) {
-        result.push(colores[i % colores.length]);
-    }
+    for(let i=0; i<cantidad; i++) result.push(colores[i % colores.length]);
     return result;
 }
 
@@ -626,44 +570,18 @@ function renderizarGraficos() {
     const dataAprobadas = aprobadasSorted.map(d => d.cantidad);
 
     const ctxAprobadas = document.getElementById('aprobadasChart').getContext('2d');
-    const configAprobadas = {
-        type: 'pie',
-        data: {
-            labels: labelsAprobadas,
-            datasets: [{
-                data: dataAprobadas,
-                backgroundColor: generarColores(dataAprobadas.length),
-                borderWidth: 1,
-                borderColor: '#15161a'
-            }]
-        },
-        options: { color: '#e2e2e5', responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } }
-    };
+    const configAprobadas = { type: 'pie', data: { labels: labelsAprobadas, datasets: [{ data: dataAprobadas, backgroundColor: generarColores(dataAprobadas.length), borderWidth: 1, borderColor: '#15161a' }] }, options: { color: '#e2e2e5', responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } } };
 
     const eliminadasSorted = [...datosEliminadas].sort((a, b) => b.cantidad - a.cantidad).slice(0, 10);
     const labelsEliminadas = eliminadasSorted.map(d => nombresMap[d.nombreNorm] || d.nombreNorm);
     const dataEliminadas = eliminadasSorted.map(d => d.cantidad);
 
     const ctxEliminadas = document.getElementById('eliminadasChart').getContext('2d');
-    const configEliminadas = {
-        type: 'pie',
-        data: {
-            labels: labelsEliminadas,
-            datasets: [{
-                data: dataEliminadas,
-                backgroundColor: generarColores(dataEliminadas.length),
-                borderWidth: 1,
-                borderColor: '#15161a'
-            }]
-        },
-        options: { color: '#e2e2e5', responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } }
-    };
+    const configEliminadas = { type: 'pie', data: { labels: labelsEliminadas, datasets: [{ data: dataEliminadas, backgroundColor: generarColores(dataEliminadas.length), borderWidth: 1, borderColor: '#15161a' }] }, options: { color: '#e2e2e5', responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } } };
 
     let fallasArray = [];
     for (let f in totalesFallasAprobadas) {
-        if(totalesFallasAprobadas[f] > 0) {
-            fallasArray.push({ falla: f, cantidad: totalesFallasAprobadas[f] });
-        }
+        if(totalesFallasAprobadas[f] > 0) fallasArray.push({ falla: f, cantidad: totalesFallasAprobadas[f] });
     }
     fallasArray.sort((a, b) => b.cantidad - a.cantidad);
     const topFallas = fallasArray.slice(0, 10);
@@ -672,19 +590,7 @@ function renderizarGraficos() {
     const dataFallas = topFallas.map(f => f.cantidad);
 
     const ctxFallasAprobadas = document.getElementById('fallasAprobadasChart').getContext('2d');
-    const configFallasAprobadas = {
-        type: 'pie',
-        data: {
-            labels: labelsFallas,
-            datasets: [{
-                data: dataFallas,
-                backgroundColor: generarColores(dataFallas.length),
-                borderWidth: 1,
-                borderColor: '#15161a'
-            }]
-        },
-        options: { color: '#e2e2e5', responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } }
-    };
+    const configFallasAprobadas = { type: 'pie', data: { labels: labelsFallas, datasets: [{ data: dataFallas, backgroundColor: generarColores(dataFallas.length), borderWidth: 1, borderColor: '#15161a' }] }, options: { color: '#e2e2e5', responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } } };
 
     if (chartAprobadas) chartAprobadas.destroy();
     if (chartEliminadas) chartEliminadas.destroy();
@@ -700,9 +606,7 @@ function actualizarSelect() {
     const valorActual = select.value;
     select.innerHTML = '<option value="">-- Seleccione --</option>';
 
-    let todosNombres = Object.keys(nombresMap).sort((a, b) => {
-        return nombresMap[a].localeCompare(nombresMap[b]);
-    });
+    let todosNombres = Object.keys(nombresMap).sort((a, b) => nombresMap[a].localeCompare(nombresMap[b]));
 
     todosNombres.forEach(norm => {
         const opt = document.createElement('option');
@@ -711,9 +615,7 @@ function actualizarSelect() {
         select.appendChild(opt);
     });
 
-    if (valorActual && nombresMap[valorActual]) {
-        select.value = valorActual;
-    }
+    if (valorActual && nombresMap[valorActual]) select.value = valorActual;
 }
 
 function actualizarDetalles() {
@@ -749,10 +651,8 @@ function actualizarDetalles() {
 
     const fallasContainerAprobadas = document.getElementById('fallasContainerAprobadas');
     const fallasListAprobadas = document.getElementById('fallasListAprobadas');
-    
     const fallasContainer = document.getElementById('fallasContainer');
     const fallasList = document.getElementById('fallasList');
-
     const galleryAprobadas = document.getElementById('galleryAprobadas');
     const galleryEliminadas = document.getElementById('galleryEliminadas');
     
@@ -811,39 +711,27 @@ function actualizarDetalles() {
     }
 }
 
-// --- SISTEMA DE FONDO GLITCH ---
 setInterval(generarGlitchNombre, 1200); 
 
 function generarGlitchNombre() {
     const container = document.getElementById('glitch-background');
     if (!container) return;
-
     const nombres = Object.values(nombresMap);
     if (nombres.length === 0) return;
-
     const randomName = nombres[Math.floor(Math.random() * nombres.length)];
-    
     const span = document.createElement('span');
     span.className = 'glitch-name';
     span.textContent = randomName;
-    
     const x = Math.random() * 90;
     const y = Math.random() * 90;
     span.style.left = `${x}vw`;
     span.style.top = `${y}vh`;
-    
     span.style.fontSize = `${Math.random() * 2 + 1}rem`;
-    
     container.appendChild(span);
-
-    setTimeout(() => {
-        span.remove();
-    }, 800);
+    setTimeout(() => { span.remove(); }, 800);
 }
 
-// --- SISTEMA ANTI-CURIOSOS BÁSICO ---
 document.addEventListener('contextmenu', event => event.preventDefault());
-
 document.addEventListener('keydown', function(e) {
     if(e.keyCode == 123) { e.preventDefault(); return false; }
     if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { e.preventDefault(); return false; }
