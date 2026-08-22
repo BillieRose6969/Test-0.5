@@ -6,7 +6,7 @@ const REFRESH_INTERVAL = 2 * 60 * 60 * 1000;
 const urlDetalleFallas = "https://docs.google.com/spreadsheets/d/100OcdQ6iZ83TxJVidgTWZkrQTbFSZhmaY8yBk48s78o/gviz/tq?tqx=out:csv&sheet=Detalle%20de%20Fallas%20por%20Procesador";
 const urlDetalleFallasAprobadas = "https://docs.google.com/spreadsheets/d/1msmEunitlatAq01F338OOc-iW5RSbSL-fTtXeHk9AXg/gviz/tq?tqx=out:csv&sheet=Motor%20de%20datos%20(Aprobadas)%20NO%20TOCAR";
 
-// --- CAMBIO CLAVE: Ahora leemos de tu Excel directo, NO del script temporal ---
+// Lectura desde Sheet
 const urlEvidencias = "https://docs.google.com/spreadsheets/d/1msmEunitlatAq01F338OOc-iW5RSbSL-fTtXeHk9AXg/gviz/tq?tqx=out:csv&sheet=Base%20Evidencias%20(NO%20TOCAR)";
 
 let datosAprobadas = []; 
@@ -368,7 +368,7 @@ async function cargarDatos(forzarActualizacion = false) {
     isFetching = true; 
 
     try {
-        // --- CAMBIO: Ahora TODO se trae como CSV rapidísimo ---
+        // --- CAMBIO: Ahora TODO se trae como CSV ---
         const [aprobadas, eliminadas, detalleFallas, detalleFallasAprobadas, evidenciasCSV] = await Promise.all([
             fetchCSV(urlAprobadas),
             fetchCSV(urlEliminadas),
