@@ -48,10 +48,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (buscador && sugerenciasBox && select) {
         
-        // Si alguien usa el menú clásico, limpiamos el buscador y mostramos los datos
         select.addEventListener('change', () => {
-            buscador.value = ''; // Vacía la barra roja
-            actualizarDetalles(); // Carga los gráficos y fotos
+            buscador.value = ''; 
+            actualizarDetalles(); 
         });
 
         buscador.addEventListener('input', (e) => {
@@ -350,7 +349,7 @@ function normalizarNombre(nombre) {
         "jcqueline vivas": "vivas jacqueline", 
         "milton moller": "moller milton",
         "ignacio rodriguez": "rodriguez ignacio",
-        "german pereyra": "pereyra german",
+        "german pereyra": "pereyra german"
     };
 
     return aliases[nombreUnificado] || nombreUnificado;
@@ -360,6 +359,18 @@ function registrarNombreOriginal(nombreNormalizado, nombreOriginal) {
     if (!nombresMap[nombreNormalizado]) {
         nombresMap[nombreNormalizado] = nombreNormalizado.toUpperCase();
     }
+}
+
+// --- NUEVO: CALCULAR TOTALES GLOBALES ---
+function actualizarTotalesGlobales() {
+    let totalAprobadas = datosAprobadas.reduce((suma, d) => suma + d.cantidad, 0);
+    let totalEliminadas = datosEliminadas.reduce((suma, d) => suma + d.cantidad, 0);
+
+    const elAprobadas = document.getElementById('globalTotalAprobadas');
+    const elEliminadas = document.getElementById('globalTotalEliminadas');
+
+    if(elAprobadas) elAprobadas.textContent = totalAprobadas;
+    if(elEliminadas) elEliminadas.textContent = totalEliminadas;
 }
 
 async function cargarDatos(forzarActualizacion = false) {
@@ -379,6 +390,7 @@ async function cargarDatos(forzarActualizacion = false) {
                     const data = JSON.parse(cachedData);
                     procesarDatos(data.aprobadas, data.eliminadas, data.detalleFallas, data.detalleFallasAprobadas, data.evidencias);
                     actualizarSelect();
+                    actualizarTotalesGlobales();
                     renderizarGraficos();
                     
                     if (document.getElementById('buscadorProcesadores').value !== '') {
@@ -421,6 +433,7 @@ async function cargarDatos(forzarActualizacion = false) {
         
         procesarDatos(aprobadas, eliminadas, detalleFallas, detalleFallasAprobadas, evidencias);
         actualizarSelect();
+        actualizarTotalesGlobales();
         renderizarGraficos();
         
         if (document.getElementById('buscadorProcesadores').value !== '') {
