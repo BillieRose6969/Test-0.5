@@ -13,26 +13,44 @@
     <script src="app.js" defer></script>
 </head>
 <body>
-    <!-- Contenedor para los destellos de fondo -->
     <div id="glitch-background" class="glitch-bg"></div>
 
     <header>
         <h1>Dashboard de Rendimiento - Procesadores</h1>
-        <!-- Botón para forzar actualización -->
         <button id="btnForceRefresh" class="btn-refresh">↻ Forzar Actualización</button>
     </header>
 
-    <!--- Indicador de Carga --->
     <div id="loadingOverlay" class="loading-overlay">
         <div class="spinner"></div>
         <p>Cargando datos en vivo...<br>Por favor espera unos segundos.</p>
     </div>
 
     <main class="container">
+
+        <!-- === NUEVO BOTÓN DESPLEGABLE DE NOTIFICACIONES === -->
+        <div class="notif-container">
+            <button id="btnNotificaciones" class="btn-notif-toggle">
+                🔔 ALERTAS DEL SISTEMA
+                <span id="notifBadge" class="notif-badge" style="display: none;">0</span>
+            </button>
+            <div id="notificationPanel" class="notification-dropdown" style="display: none;">
+                <ul id="notificationList">
+                    <!-- Se inyectan las notificaciones acá -->
+                </ul>
+            </div>
+        </div>
+
         <section class="global-stats card">
-            <h2>Errores Globales</h2>
-            
-            <!-- TARJETA SUTIL DE TOTALES GLOBALES -->
+            <div class="header-con-boton">
+                <h2>Errores Globales</h2>
+                <div class="tooltip-wrapper">
+                    <button id="btnDescargarGlobal" class="btn-submit btn-sm disabled-btn" disabled>
+                        🗃️ EXPORTAR CSV
+                    </button>
+                    <span class="tooltip-text">MÓDULO EN DESARROLLO</span>
+                </div>
+            </div> 
+                           
             <div class="global-totals-bar">
                 <div class="total-item">
                     <span class="total-label">Total Mal Aprobadas:</span>
@@ -64,16 +82,13 @@
             <h2>Rendimiento Individual</h2>
             
             <div class="selector-container">
-                <!-- Buscador Arasaka con Menú Flotante -->
                 <div class="search-container-wrapper">
                     <div class="search-container">
                         <input type="text" id="buscadorProcesadores" placeholder="> BUSCAR PROCESADOR.EXE..." autocomplete="off">
-                        <!-- Esta es la tarjetita que aparecerá mágicamente -->
                         <ul id="sugerenciasBusqueda" class="sugerencias-box" style="display: none;"></ul>
                     </div>
                 </div>
 
-                <!-- Menú desplegable clásico activado como opción secundaria -->
                 <p style="color: var(--text-muted); margin-bottom: 10px; font-size: 0.85rem; text-transform: uppercase;">-- O seleccione del directorio --</p>
                 <select id="procesadorSelect">
                     <option value="">-- Cargar y Seleccione --</option>
@@ -81,7 +96,16 @@
             </div>
 
             <div id="detailsCard" class="details-card" style="display: none;">
-                <h3 id="detailsName" class="details-name">Nombre</h3>
+                <div class="header-con-boton details-header">
+                    <h3 id="detailsName" class="details-name">Nombre</h3>
+                    <div class="tooltip-wrapper">
+                        <button id="btnDescargarIndividual" class="btn-submit btn-sm btn-individual disabled-btn" disabled>
+                            📄 EXPORTAR DATOS
+                        </button>
+                        <span class="tooltip-text">MÓDULO EN DESARROLLO</span>
+                    </div>
+                </div>
+
                 <div class="stats-grid">
                     <div class="stat-box">
                         <h4>Presunciones Mal Aprobadas</h4>
@@ -96,38 +120,27 @@
                 <div class="fallas-wrapper" id="fallasWrapper" style="display: none;">
                     <div class="fallas-container" id="fallasContainerAprobadas" style="display: none;">
                         <h4>Detalle de Fallas (Presunciones Mal Aprobadas)</h4>
-                        <ul class="fallas-list" id="fallasListAprobadas">
-                            <!-- Items de fallas irán aquí -->
-                        </ul>
-                        <div class="evidencias-gallery" id="galleryAprobadas">
-                            <!-- Botón de Galería irá aquí -->
-                        </div>
+                        <ul class="fallas-list" id="fallasListAprobadas"></ul>
+                        <div class="evidencias-gallery" id="galleryAprobadas"></div>
                     </div>
 
                     <div class="fallas-container" id="fallasContainer" style="display: none;">
                         <h4>Detalle de Fallas (Presunciones Mal Eliminadas)</h4>
-                        <ul class="fallas-list" id="fallasList">
-                            <!-- Items de fallas irán aquí -->
-                        </ul>
-                        <div class="evidencias-gallery" id="galleryEliminadas">
-                            <!-- Botón de Galería irá aquí -->
-                        </div>
+                        <ul class="fallas-list" id="fallasList"></ul>
+                        <div class="evidencias-gallery" id="galleryEliminadas"></div>
                     </div>
                 </div>
             </div>
         </section>
     </main>
 
-    <!-- Modal para la Galería de Imágenes -->
     <div id="imageModal" class="modal">
         <div class="modal-content">
             <span class="close-modal">&times;</span>
             <h2 id="modalTitle">Galería de Evidencias</h2>
             <div class="carousel-container">
                 <button id="prevBtn" class="carousel-btn" style="display: none;">&#10094;</button>
-                <div id="modalGallery" class="modal-gallery">
-                <!-- Las imágenes/enlaces se inyectarán aquí -->
-                </div>
+                <div id="modalGallery" class="modal-gallery"></div>
                 <button id="nextBtn" class="carousel-btn" style="display: none;">&#10095;</button>
             </div>
             <div id="carouselCounter" class="carousel-counter"></div>
