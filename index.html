@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard de Rendimiento - Procesadores</title>
-    <link rel="stylesheet" href="style.css?v=2.0">
+    <link rel="stylesheet" href="style.css?v=2.1">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <!-- PapaParse -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" defer></script>
-    <!-- Script principal -->
+    <!-- Tu script principal -->
     <script src="app.js?v=2.1" defer></script>
 </head>
 <body>
@@ -27,22 +27,19 @@
 
     <main class="container">
 
-        <!-- === BOTÓN DESPLEGABLE DE NOTIFICACIONES === -->
         <div class="notif-container">
             <button id="btnNotificaciones" class="btn-notif-toggle">
                 🔔 ALERTAS DEL SISTEMA
                 <span id="notifBadge" class="notif-badge" style="display: none;">0</span>
             </button>
             <div id="notificationPanel" class="notification-dropdown" style="display: none;">
-                <ul id="notificationList">
-                    <!-- Se inyectan las notificaciones acá -->
-                </ul>
+                <ul id="notificationList"></ul>
             </div>
         </div>
 
         <section class="global-stats card">
             <div class="header-con-boton">
-                <h2>Errores Globales</h2>
+                <h2>Inteligencia Global</h2>
                 <div class="tooltip-wrapper">
                     <button id="btnDescargarGlobal" class="btn-submit btn-sm disabled-btn" disabled>
                         🗃️ EXPORTAR CSV
@@ -50,6 +47,46 @@
                     <span class="tooltip-text">MÓDULO EN DESARROLLO</span>
                 </div>
             </div> 
+
+            <!-- ZONA DE FILTROS DEMOGRÁFICOS -->
+            <div class="selector-container">
+                <div class="filter-header">> PARÁMETROS DE BÚSQUEDA Y FILTRADO</div>
+                
+                <div class="filters-grid">
+                    <div class="search-container">
+                        <input type="text" id="buscadorProcesadores" class="input-arasaka" placeholder="> BUSCAR PROCESADOR.EXE..." autocomplete="off">
+                        <ul id="sugerenciasBusqueda" class="sugerencias-box" style="display: none;"></ul>
+                    </div>
+                    
+                    <div class="select-wrapper">
+                        <select id="filtroTurno" class="input-arasaka">
+                            <option value="">[ TODOS LOS TURNOS ]</option>
+                            <option value="tm5">TURNO MAÑANA 5HS</option>
+                            <option value="tt5">TURNO TARDE 5HS</option>
+                            <option value="tm8">TURNO MAÑANA 8HS</option>
+                            <option value="tt8">TURNO TARDE 8HS</option>
+                            <option value="ho">HOME OFFICE</option>
+                        </select>
+                    </div>
+                    
+                    <div class="select-wrapper">
+                        <select id="filtroSector" class="input-arasaka">
+                            <option value="">[ TODOS LOS SECTORES ]</option>
+                            <option value="fotomulta">FOTOMULTA</option>
+                            <option value="fotomarca">FOTOMARCA</option>
+                            <option value="radares">RADARES</option>
+                            <option value="homeoffice">HOME OFFICE</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="directorio-wrapper">
+                    <p>-- O seleccione del directorio filtrado --</p>
+                    <select id="procesadorSelect" class="input-arasaka">
+                        <option value="">-- Cargar y Seleccione --</option>
+                    </select>
+                </div>
+            </div>
                            
             <div class="global-totals-bar">
                 <div class="total-item">
@@ -78,26 +115,16 @@
             </div>
         </section>
 
-        <section class="individual-stats card">
+        <section class="individual-stats card" id="seccionIndividual">
             <h2>Rendimiento Individual</h2>
             
-            <div class="selector-container">
-                <div class="search-container-wrapper">
-                    <div class="search-container">
-                        <input type="text" id="buscadorProcesadores" placeholder="> BUSCAR PROCESADOR..." autocomplete="off">
-                        <ul id="sugerenciasBusqueda" class="sugerencias-box" style="display: none;"></ul>
-                    </div>
-                </div>
-
-                <p style="color: var(--text-muted); margin-bottom: 10px; font-size: 0.85rem; text-transform: uppercase;">-- O seleccione del directorio --</p>
-                <select id="procesadorSelect">
-                    <option value="">-- Cargar y Seleccione --</option>
-                </select>
-            </div>
-
             <div id="detailsCard" class="details-card" style="display: none;">
                 <div class="header-con-boton details-header">
-                    <h3 id="detailsName" class="details-name">Nombre</h3>
+                    <div class="perfil-info">
+                        <h3 id="detailsName" class="details-name">Nombre</h3>
+                        <span id="detailsDemographics" class="details-demographics">[ TURNO ] // [ SECTOR ]</span>
+                    </div>
+                    
                     <div class="tooltip-wrapper">
                         <button id="btnDescargarIndividual" class="btn-submit btn-sm btn-individual disabled-btn" disabled>
                             📄 EXPORTAR DATOS
@@ -130,6 +157,10 @@
                         <div class="evidencias-gallery" id="galleryEliminadas"></div>
                     </div>
                 </div>
+            </div>
+            
+            <div id="noProcessorMsg" class="no-processor-msg">
+                > SELECCIONE UN PROCESADOR PARA VER SU RENDIMIENTO INDIVIDUAL
             </div>
         </section>
     </main>
