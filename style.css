@@ -134,3 +134,73 @@ select.input-arasaka option { background-color: var(--bg-card); color: var(--tex
 .disabled-btn { background: #1a1a1a !important; color: #444 !important; border-color: #333 !important; cursor: not-allowed !important; box-shadow: none !important; }
 .tooltip-text { visibility: hidden; width: max-content; background-color: var(--accent-red); color: #000; text-align: center; border-radius: 0; padding: 5px 10px; position: absolute; z-index: 1; bottom: 125%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.3s; font-family: var(--font-mono); font-size: 0.8rem; font-weight: bold; }
 .tooltip-wrapper:hover .tooltip-text { visibility: visible; opacity: 1; }
+/* --- TERMINAL HISTÓRICA --- */
+.terminal-modal .modal-content { background: transparent; border: none; box-shadow: none; }
+.terminal-content { background-color: #050d05; border: 2px solid #00ff00; width: 95%; max-width: 1000px; margin: 2% auto; padding: 20px; box-shadow: 0 0 30px rgba(0, 255, 0, 0.15); font-family: var(--font-mono); color: #00ff00; position: relative; overflow: hidden; }
+.terminal-content::before { content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); z-index: 2; background-size: 100% 2px, 3px 100%; pointer-events: none; }
+.terminal-header { display: flex; justify-content: space-between; border-bottom: 1px dashed #00ff00; padding-bottom: 10px; margin-bottom: 20px; }
+.terminal-title { font-weight: bold; letter-spacing: 1px; }
+.close-terminal { color: #00ff00; font-size: 24px; cursor: pointer; line-height: 1; }
+.close-terminal:hover { color: #fff; text-shadow: 0 0 10px #00ff00; }
+.terminal-controls { display: flex; gap: 15px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+.input-terminal { background: #000; border: 1px solid #00ff00; color: #00ff00; padding: 8px 15px; font-family: var(--font-mono); outline: none; }
+.btn-terminal { background: #002200; color: #00ff00; border: 1px solid #00ff00; padding: 8px 20px; cursor: pointer; font-family: var(--font-mono); font-weight: bold; transition: all 0.2s; }
+.btn-terminal:hover { background: #00ff00; color: #000; }
+.terminal-screen { background: #020602; border: 1px solid #004400; min-height: 400px; padding: 20px; overflow-y: auto; max-height: 60vh; }
+.blinking-cursor::after { content: '█'; animation: blink 1s step-end infinite; }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+/* Ajuste de enlaces en la terminal */
+.terminal-screen a { color: #00ff00; text-decoration: none; border-bottom: 1px dashed #00ff00; padding-bottom: 2px; }
+.terminal-screen a:hover { background: #00ff00; color: #000; }
+/* --- ESTILO BOTÓN PURGA (RIESGO CRÍTICO) --- */
+.btn-purga {
+    background-color: #0a0a0c;
+    color: #ff2a2a;
+    border: 1px solid #ff2a2a;
+    font-family: var(--font-mono);
+    font-weight: bold;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    padding: 8px 15px;
+    cursor: pointer;
+    position: relative;
+    box-shadow: 0 0 10px rgba(255, 42, 42, 0.2) inset;
+    transition: all 0.2s ease-in-out;
+    animation: pulse-danger 2s infinite;
+}
+
+.btn-purga:hover {
+    background-color: #ff2a2a;
+    color: #0a0a0c;
+    box-shadow: 0 0 20px rgba(255, 42, 42, 0.8);
+    border-color: #ff2a2a;
+    animation: none;
+    transform: scale(1.05);
+}
+
+@keyframes pulse-danger {
+    0% { box-shadow: 0 0 5px rgba(255, 42, 42, 0.1) inset; border-color: rgba(255, 42, 42, 0.4); }
+    50% { box-shadow: 0 0 15px rgba(255, 42, 42, 0.6) inset; border-color: rgba(255, 42, 42, 1); text-shadow: 0 0 5px #ff2a2a; }
+    100% { box-shadow: 0 0 5px rgba(255, 42, 42, 0.1) inset; border-color: rgba(255, 42, 42, 0.4); }
+}
+/* --- ESTILO BOTÓN EXPORTACIÓN --- */
+.btn-export-arasaka {
+    background-color: var(--bg-main);
+    color: var(--accent-red);
+    border: 1px solid var(--accent-red);
+    font-family: var(--font-heading);
+    font-weight: bold;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 8px 15px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-export-arasaka:hover {
+    background-color: var(--accent-red);
+    color: var(--bg-main);
+    box-shadow: 0 0 15px var(--accent-red-dim);
+}
