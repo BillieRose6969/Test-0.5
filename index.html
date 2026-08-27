@@ -4,20 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard de Rendimiento - Procesadores</title>
-    <link rel="stylesheet" href="style.css?v=2.2">
+    <link rel="stylesheet" href="style.css?v=2.1">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <!-- PapaParse -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" defer></script>
-    <!-- Tu script principal -->
-    <script src="app.js?v=2.4" defer></script>
+     <!-- SheetJS (Motor para exportar a Excel) -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js" defer></script>
+    <script src="app.js?v=2.1" defer></script>
 </head>
 <body>
     <div id="glitch-background" class="glitch-bg"></div>
 
     <header>
         <h1>Dashboard de Rendimiento - Procesadores</h1>
-        <button id="btnForceRefresh" class="btn-refresh">↻ Forzar Actualización</button>
+        <button id="btnForceRefresh" class="btn-refresh">↻ Forzar Actualización</button> <button id="btnAbrirHistorial" class="btn-refresh" style="border-color: #00ff00; color: #00ff00;">🗄️ ACCEDER AL ARCHIVO</button>
     </header>
 
     <div id="loadingOverlay" class="loading-overlay">
@@ -39,12 +40,20 @@
 
         <section class="global-stats card">
             <div class="header-con-boton">
-                <h2>Mapa De La Empresa</h2>
-                <div class="tooltip-wrapper">
-                    <button id="btnDescargarGlobal" class="btn-submit btn-sm disabled-btn" disabled>
-                        🗃️ EXPORTAR CSV
+                <h2>Inteligencia Global</h2>
+                
+                <!-- Contenedor flex para alinear los botones -->
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div class="tooltip-wrapper">
+                        <button id="btnDescargarGlobal" class="btn-export-arasaka">
+                            🗃️ EXPORTAR CSV (ADMIN)
+                        </button> 
+                    </div>
+                    
+                    <!-- BOTÓN DE PURGA CON NUEVA CLASE -->
+                    <button id="btnCierreMensual" class="btn-purga">
+                        ☢️ INICIAR PURGA
                     </button>
-                    <span class="tooltip-text">MÓDULO EN DESARROLLO</span>
                 </div>
             </div> 
 
@@ -83,7 +92,7 @@
                 <div class="directorio-wrapper">
                     <p>-- O seleccione del directorio filtrado --</p>
                     <select id="procesadorSelect" class="input-arasaka">
-                        <option value="">-- Seleccione un procesador --</option>
+                        <option value="">-- Cargar y Seleccione --</option>
                     </select>
                 </div>
             </div>
@@ -175,6 +184,29 @@
                 <button id="nextBtn" class="carousel-btn" style="display: none;">&#10095;</button>
             </div>
             <div id="carouselCounter" class="carousel-counter"></div>
+        </div>
+    </div>
+    <!-- TERMINAL DE ARCHIVO HISTÓRICO ARASAKA -->
+    <div id="historicalModal" class="modal terminal-modal">
+        <div class="terminal-content">
+            <div class="terminal-header">
+                <span class="terminal-title">> ARASAKA CORP // ACCESO A DATOS CLASIFICADOS // HISTORIAL</span>
+                <span class="close-terminal">&times;</span>
+            </div>
+            <div class="terminal-body">
+                <div class="terminal-controls">
+                    <label>> SELECCIONE CICLO DE EXTRACCIÓN:</label>
+                    <select id="historialSelect" class="input-terminal">
+                        <option value="">-- ESPERANDO CONEXIÓN --</option>
+                        <option value="AGO_2026">AGOSTO 2026</option>
+                    </select>
+                    <button id="btnCargarHistorial" class="btn-terminal">[ EJECUTAR CONSULTA ]</button>
+                </div>
+                
+                <div class="terminal-screen" id="terminalScreen">
+                    <p class="blinking-cursor">> SISTEMA EN ESPERA. SELECCIONE UN MES PARA INICIAR LA DESENCRIPTACIÓN...</p>
+                </div>
+            </div>
         </div>
     </div>
 </body>
