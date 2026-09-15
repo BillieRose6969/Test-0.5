@@ -5,11 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard de Rendimiento - Procesadores</title>
     <link rel="stylesheet" href="style.css?v=3.0">
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
-    <!-- PapaParse -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" defer></script>
-     <!-- SheetJS (Motor para exportar a Excel) -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js" defer></script>
     <script src="app.js?v=3.2" defer></script>
 </head>
@@ -42,7 +39,6 @@
             <div class="header-con-boton">
                 <h2>Inteligencia Global</h2>
                 
-                <!-- Contenedor flex para alinear los botones -->
                 <div style="display: flex; align-items: center; gap: 15px;">
                     <div class="tooltip-wrapper">
                         <button id="btnDescargarGlobal" class="btn-export-arasaka">
@@ -50,14 +46,12 @@
                         </button> 
                     </div>
                     
-                    <!-- BOTÓN DE PURGA CON NUEVA CLASE -->
                     <button id="btnCierreMensual" class="btn-purga">
                         ☢️ INICIAR PURGA
                     </button>
                 </div>
             </div> 
 
-            <!-- ZONA DE FILTROS DEMOGRÁFICOS -->
             <div class="selector-container">
                 <div class="filter-header">> PARÁMETROS DE BÚSQUEDA Y FILTRADO</div>
                 
@@ -186,7 +180,6 @@
             <div id="carouselCounter" class="carousel-counter"></div>
         </div>
     </div>
-    <!-- TERMINAL DE ARCHIVO HISTÓRICO ARASAKA -->
     <div id="historicalModal" class="modal terminal-modal">
         <div class="terminal-content">
             <div class="terminal-header">
