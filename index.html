@@ -4,18 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard de Rendimiento - Procesadores</title>
-    <link rel="stylesheet" href="style.css?v=3.0">
+    <link rel="stylesheet" href="style.css?v=2.1">
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    <!-- PapaParse -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" defer></script>
+     <!-- SheetJS (Motor para exportar a Excel) -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js" defer></script>
-    <script src="app.js?v=3.2" defer></script>
+    <script src="app.js?v=2.1" defer></script>
 </head>
 <body>
     <div id="glitch-background" class="glitch-bg"></div>
 
     <header>
         <h1>Dashboard de Rendimiento - Procesadores</h1>
-        <button id="btnForceRefresh" class="btn-refresh">↻ Forzar Actualización</button> <button id="btnAbrirHistorial" class="btn-refresh" style="border-color: #00ff00; color: #00ff00;">🗄️ Historial</button>
+        <button id="btnForceRefresh" class="btn-refresh">↻ Forzar Actualización</button> <button id="btnAbrirHistorial" class="btn-refresh" style="border-color: #00ff00; color: #00ff00;">🗄️ ACCEDER AL ARCHIVO</button>
     </header>
 
     <div id="loadingOverlay" class="loading-overlay">
@@ -44,6 +47,12 @@
                         <button id="btnDescargarGlobal" class="btn-export-arasaka">
                             🗃️ EXPORTAR CSV (ADMIN)
                         </button> 
+                    </div>
+
+                    <div class="tooltip-wrapper">
+                        <button id="btnAdminPersonal" class="btn-export-arasaka" style="border-color: #00ffaa; color: #00ffaa;">
+                            ⚙️ ASIGNAR SECTORES
+                        </button>
                     </div>
                     
                     <button id="btnCierreMensual" class="btn-purga">
@@ -78,7 +87,8 @@
                             <option value="fotomulta">FOTOMULTA</option>
                             <option value="fotomarca">FOTOMARCA</option>
                             <option value="radares">RADARES</option>
-                            <option value="homeoffice">HOME OFFICE</option>
+                            <option value="revisado">REVISADO</option>
+                            <option value="carroussel">CARROUSSEL</option>
                         </select>
                     </div>
                 </div>
@@ -100,6 +110,11 @@
                     <span class="total-label">Total Mal Eliminadas:</span>
                     <span id="globalTotalEliminadas" class="total-number">0</span>
                 </div>
+            </div>
+
+            <div class="ranking-excelencia" id="panelExcelencia">
+                <h3>🏆 GRUPO DE EXCELENCIA </h3>
+                <ul id="listaExcelencia" class="excelencia-list"></ul>
             </div>
 
             <div class="charts-container">
@@ -127,13 +142,26 @@
                         <h3 id="detailsName" class="details-name">Nombre</h3>
                         <span id="detailsDemographics" class="details-demographics">[ TURNO ] // [ SECTOR ]</span>
                     </div>
-                    
-                    <div class="tooltip-wrapper">
-                        <button id="btnDescargarIndividual" class="btn-submit btn-sm btn-individual disabled-btn" disabled>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="btnAbrirDescargo" class="btn-evidencia" style="border-color: #ffaa00; color: #ffaa00;">
+                            ⚖️ INGRESAR DESCARGO
+                        </button>
+                        <button id="btnDescargarIndividual" class="btn-submit btn-sm btn-individual">
                             📄 EXPORTAR DATOS
                         </button>
-                        <span class="tooltip-text">MÓDULO EN DESARROLLO</span>
                     </div>
+                </div>
+
+                
+                <div id="descargosViewer" style="display: none; margin-bottom: 25px; padding: 15px; border: 1px dashed #ffaa00; background: rgba(255, 170, 0, 0.05);">
+                    <h4 style="color: #ffaa00; margin-bottom: 10px; font-family: var(--font-mono); text-transform: uppercase;">> Estado de Apelaciones</h4>
+                    <ul id="listaDescargosVisor" style="list-style: none; padding: 0; font-family: var(--font-mono); font-size: 0.85rem; color: #ccc;"></ul>
+                </div>
+
+                
+                <div class="chart-wrapper" style="margin-bottom: 20px;">
+                    <h3>Evolución Semanal de Rendimiento</h3>
+                    <canvas id="evolucionChart"></canvas>
                 </div>
 
                 <div class="stats-grid">
@@ -180,10 +208,12 @@
             <div id="carouselCounter" class="carousel-counter"></div>
         </div>
     </div>
+    
+    
     <div id="historicalModal" class="modal terminal-modal">
         <div class="terminal-content">
             <div class="terminal-header">
-                <span class="terminal-title">> ACCESO A DATOS CLASIFICADOS // HISTORIAL</span>
+                <span class="terminal-title">> DASHBOARD // ACCESO A DATOS CLASIFICADOS // HISTORIAL</span>
                 <span class="close-terminal">&times;</span>
             </div>
             <div class="terminal-body">
@@ -191,7 +221,6 @@
                     <label>> SELECCIONE CICLO DE EXTRACCIÓN:</label>
                     <select id="historialSelect" class="input-terminal">
                         <option value="">-- ESPERANDO CONEXIÓN --</option>
-                        <option value="AGO_2026">AGOSTO 2026</option>
                     </select>
                     <button id="btnCargarHistorial" class="btn-terminal">[ EJECUTAR CONSULTA ]</button>
                 </div>
@@ -199,6 +228,47 @@
                 <div class="terminal-screen" id="terminalScreen">
                     <p class="blinking-cursor">> SISTEMA EN ESPERA. SELECCIONE UN MES PARA INICIAR LA DESENCRIPTACIÓN...</p>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div id="descargoModal" class="modal terminal-modal">
+        <div class="terminal-content" style="border-color: #ffaa00; max-width: 600px;">
+            <div class="terminal-header" style="border-bottom-color: #ffaa00;">
+                <span class="terminal-title" style="color: #ffaa00;">> PROTOCOLO DE APELACIÓN / DESCARGO</span>
+                <span class="close-descargo close-terminal" style="color: #ffaa00;">&times;</span>
+            </div>
+            <div class="terminal-body">
+                <p style="color: #ccc; margin-bottom: 15px;">Operador: <b id="descargoOperador"></b></p>
+                <input type="text" id="descargoLink" class="input-terminal" style="width: 100%; margin-bottom: 15px; border-color: #ffaa00; color: #ffaa00;" placeholder="> PEGUE EL ENLACE DE LA EVIDENCIA AQUÍ...">
+                <textarea id="descargoMotivo" class="input-terminal" style="width: 100%; height: 100px; margin-bottom: 15px; border-color: #ffaa00; color: #ffaa00;" placeholder="> JUSTIFIQUE EL MOTIVO DEL ERROR CONSCIENTE..."></textarea>
+                <button id="btnEnviarDescargo" class="btn-terminal" style="background: #332200; border-color: #ffaa00; color: #ffaa00; width: 100%;">[ ENVIAR A AUDITORÍA ]</button>
+            </div>
+        </div>
+    </div>
+    <
+    <div id="personalModal" class="modal terminal-modal">
+        <div class="terminal-content" style="border-color: #00ffaa; max-width: 800px;">
+            <div class="terminal-header" style="border-bottom-color: #00ffaa;">
+                <span class="terminal-title" style="color: #00ffaa;">> DASHBOARD // GESTIÓN DE PERSONAL</span>
+                <span class="close-personal close-terminal" style="color: #00ffaa;">&times;</span>
+            </div>
+            <div class="terminal-body">
+                <p style="color: #ccc; margin-bottom: 15px;">> Asigne turnos y sectores. Los cambios se guardan localmente en su navegador.</p>
+                <div style="max-height: 50vh; overflow-y: auto; margin-bottom: 15px; border: 1px solid #00ffaa; padding: 10px; background: #001100;">
+                    <table style="width: 100%; color: #fff; text-align: left; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 1px dashed #00ffaa; color: #00ffaa;">
+                                <th style="padding: 5px;">OPERADOR (APELLIDO NOMBRE)</th>
+                                <th style="padding: 5px;">TURNO</th>
+                                <th style="padding: 5px;">SECTOR</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaPersonalBody"></tbody>
+                    </table>
+                </div>
+                <button id="btnGuardarPersonal" class="btn-terminal" style="background: #003322; border-color: #00ffaa; color: #00ffaa; width: 100%;">[ GUARDAR MATRIZ Y REINICIAR ]</button>
             </div>
         </div>
     </div>
