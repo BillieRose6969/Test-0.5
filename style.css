@@ -12,6 +12,7 @@ header h1 { font-family: var(--font-heading); font-size: 2rem; font-weight: 700;
 .total-label { color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; }
 .total-number { color: var(--accent-red); font-family: var(--font-mono); font-size: 1.8rem; font-weight: bold; text-shadow: 0 0 10px rgba(255, 42, 42, 0.2); line-height: 1; }
 
+
 .selector-container { background: #0f1014; padding: 25px; border: 1px dashed var(--border-color); margin-bottom: 2rem; border-left: 4px solid var(--accent-red); }
 .filter-header { color: var(--accent-red); font-family: var(--font-mono); font-size: 0.9rem; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
 .filters-grid { display: grid; grid-template-columns: 2fr 1.5fr 1.5fr; gap: 15px; align-items: center; position: relative; }
@@ -63,14 +64,17 @@ select.input-arasaka option { background-color: var(--bg-card); color: var(--tex
 .no-processor-msg { text-align: center; padding: 40px; color: var(--text-muted); font-family: var(--font-mono); font-size: 1rem; border: 1px dashed var(--border-color); text-transform: uppercase; letter-spacing: 1px; }
 .no-processor-msg::before { content: '>'; color: var(--accent-red); margin-right: 10px; }
 
+
 .evidencias-gallery { margin-top: 1.5rem; text-align: center; }
 .btn-evidencia { display: inline-block; padding: 10px 20px; font-size: 0.9rem; font-family: var(--font-heading); text-transform: uppercase; letter-spacing: 1px; border: 1px solid var(--accent-red); background: var(--bg-main); color: var(--accent-red); cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden; }
 .btn-evidencia:hover { background: var(--accent-red); color: var(--bg-main); box-shadow: 0 0 15px var(--accent-red-dim); }
+
 
 .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(10, 10, 12, 0.9); z-index: 9999; display: none; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
 .spinner { width: 50px; height: 50px; border: 3px solid rgba(255, 42, 42, 0.2); border-top: 3px solid var(--accent-red); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 .loading-overlay p { color: var(--accent-red); font-size: 1.1rem; text-align: center; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 2px; animation: pulse 1.5s infinite; }
+
 
 .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(10, 10, 12, 0.95); backdrop-filter: blur(10px); }
 .modal-content { background-color: var(--bg-card); margin: 3% auto; padding: 25px; border: 1px solid var(--accent-red); width: 90%; max-width: 900px; position: relative; box-shadow: 0 0 30px rgba(255, 42, 42, 0.15); }
@@ -105,6 +109,7 @@ select.input-arasaka option { background-color: var(--bg-card); color: var(--tex
 .btn-sm { padding: 8px 15px; font-size: 0.8rem; letter-spacing: 1px; }
 .btn-individual { background: #500000; color: var(--text-main); border-color: #500000; }
 .btn-individual:hover:not(:disabled) { background: var(--accent-red); color: var(--bg-main); border-color: var(--accent-red); }
+
 
 .notif-container { position: relative; text-align: right; margin-bottom: 20px; }
 .btn-notif-toggle { background: #0f1014; color: var(--text-main); border: 1px solid var(--border-color); padding: 10px 20px; font-family: var(--font-heading); font-size: 0.85rem; cursor: pointer; transition: all 0.3s; position: relative; text-transform: uppercase; }
@@ -199,3 +204,13 @@ select.input-arasaka option { background-color: var(--bg-card); color: var(--tex
     color: var(--bg-main);
     box-shadow: 0 0 15px var(--accent-red-dim);
 }
+
+.ranking-excelencia { background: #050a05; border: 1px solid #004400; border-left: 4px solid #00ff00; padding: 15px; margin-bottom: 25px; }
+.ranking-excelencia h3 { color: #00ff00; font-size: 1rem; margin-bottom: 10px; font-family: var(--font-mono); }
+.excelencia-list { display: flex; flex-wrap: wrap; gap: 10px; list-style: none; padding: 0; }
+.excelencia-list li { background: #001a00; color: #00ff00; padding: 5px 15px; border: 1px solid #00ff00; font-family: var(--font-mono); font-size: 0.85rem; text-transform: uppercase; }
+
+.excelencia-list li { position: relative; cursor: crosshair; transition: all 0.3s; }
+.excelencia-list li:hover { background: #004400; transform: translateY(-2px); }
+.tooltip-ranking { visibility: hidden; position: absolute; bottom: 130%; left: 50%; transform: translateX(-50%); background: #ffaa00; color: #000; padding: 4px 10px; font-size: 0.75rem; white-space: nowrap; opacity: 0; transition: all 0.2s; font-weight: bold; pointer-events: none; z-index: 10; box-shadow: 0 0 10px rgba(255, 170, 0, 0.4); border: 1px solid #fff; }
+.excelencia-list li:hover .tooltip-ranking { visibility: visible; opacity: 1; bottom: 110%; }
