@@ -70,7 +70,7 @@ select.input-arasaka option { background-color: var(--bg-card); color: var(--tex
 .btn-evidencia:hover { background: var(--accent-red); color: var(--bg-main); box-shadow: 0 0 15px var(--accent-red-dim); }
 
 
-.loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(10, 10, 12, 0.9); z-index: 9999; display: none; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+.loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(10, 10, 12, 0.9); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
 .spinner { width: 50px; height: 50px; border: 3px solid rgba(255, 42, 42, 0.2); border-top: 3px solid var(--accent-red); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 .loading-overlay p { color: var(--accent-red); font-size: 1.1rem; text-align: center; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 2px; animation: pulse 1.5s infinite; }
@@ -214,3 +214,71 @@ select.input-arasaka option { background-color: var(--bg-card); color: var(--tex
 .excelencia-list li:hover { background: #004400; transform: translateY(-2px); }
 .tooltip-ranking { visibility: hidden; position: absolute; bottom: 130%; left: 50%; transform: translateX(-50%); background: #ffaa00; color: #000; padding: 4px 10px; font-size: 0.75rem; white-space: nowrap; opacity: 0; transition: all 0.2s; font-weight: bold; pointer-events: none; z-index: 10; box-shadow: 0 0 10px rgba(255, 170, 0, 0.4); border: 1px solid #fff; }
 .excelencia-list li:hover .tooltip-ranking { visibility: visible; opacity: 1; bottom: 110%; }
+
+body::before {
+    content: " ";
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    z-index: 2;
+    background-size: 100% 2px, 3px 100%;
+    pointer-events: none;
+}
+
+.anomalia-alerta {
+    animation: radar-pulse 2s infinite;
+    border: 1px solid #ff2a2a;
+    background: rgba(255, 42, 42, 0.05);
+}
+
+@keyframes radar-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 42, 42, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 42, 42, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 42, 42, 0); }
+}
+
+.boot-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #020502;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    padding: 2rem;
+    font-family: var(--font-mono);
+    color: #00ff00;
+    overflow: hidden;
+    transition: opacity 1.5s ease-out;
+}
+
+.boot-screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.boot-text {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    text-shadow: 0 0 8px rgba(0, 255, 0, 0.6);
+    margin-bottom: 5px;
+}
+
+.boot-text div { margin-bottom: 3px; }
+
+.boot-screen::after {
+    content: " ";
+    display: block;
+    position: fixed;
+    top: 0; left: 0; bottom: 0; right: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%);
+    z-index: 2;
+    background-size: 100% 3px;
+    pointer-events: none;
+}
