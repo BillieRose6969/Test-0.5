@@ -4,16 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard de Rendimiento - Procesadores</title>
-    <link rel="stylesheet" href="style.css?v=3.0">
+    <link rel="stylesheet" href="style.css?v=3.2">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <!-- PapaParse -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" defer></script>
      <!-- SheetJS (Motor para exportar a Excel) -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js" defer></script>
-    <script src="app.js?v=3.0" defer></script>
+    <script src="app.js?v=3.2" defer></script>
 </head>
 <body>
+    <div id="bootScreen" class="boot-screen">
+        <div id="bootText" class="boot-text"></div>
+        <span class="blinking-cursor">>_</span>
+    </div>
     <div id="glitch-background" class="glitch-bg"></div>
 
     <header>
@@ -247,28 +251,32 @@
             </div>
         </div>
     </div>
-    <
     <div id="personalModal" class="modal terminal-modal">
         <div class="terminal-content" style="border-color: #00ffaa; max-width: 800px;">
             <div class="terminal-header" style="border-bottom-color: #00ffaa;">
                 <span class="terminal-title" style="color: #00ffaa;">> DASHBOARD // GESTIÓN DE PERSONAL</span>
                 <span class="close-personal close-terminal" style="color: #00ffaa;">&times;</span>
             </div>
-            <div class="terminal-body">
-                <p style="color: #ccc; margin-bottom: 15px;">> Asigne turnos y sectores. Los cambios se guardan localmente en su navegador.</p>
-                <div style="max-height: 50vh; overflow-y: auto; margin-bottom: 15px; border: 1px solid #00ffaa; padding: 10px; background: #001100;">
-                    <table style="width: 100%; color: #fff; text-align: left; border-collapse: collapse;">
-                        <thead>
-                            <tr style="border-bottom: 1px dashed #00ffaa; color: #00ffaa;">
-                                <th style="padding: 5px;">OPERADOR (APELLIDO NOMBRE)</th>
-                                <th style="padding: 5px;">TURNO</th>
-                                <th style="padding: 5px;">SECTOR</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tablaPersonalBody"></tbody>
-                    </table>
-                </div>
-                <button id="btnGuardarPersonal" class="btn-terminal" style="background: #003322; border-color: #00ffaa; color: #00ffaa; width: 100%;">[ GUARDAR MATRIZ Y REINICIAR ]</button>
+            <div class="terminal-body" style="max-height: 65vh; overflow-y: auto; padding-right: 10px;">
+                <p style="color: #8b8d96; font-size: 0.9rem; margin-bottom: 15px;">
+                    > Asigne turnos y sectores. Sincronización directa con los servidores de la Base de Datos.
+                </p>
+                <table style="width: 100%; border-collapse: collapse; text-align: left; color: #e2e2e5;">
+                    <thead>
+                        <tr style="border-bottom: 1px dashed #00ff00; color: #00ff00;">
+                            <th style="padding: 5px;">OPERADOR (APELLIDO NOMBRE)</th>
+                            <th style="padding: 5px;">TURNO</th>
+                            <th style="padding: 5px;">SECTOR</th>
+                            <th style="padding: 5px; text-align: center;">ACCIONES</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaPersonalBody">
+                        
+                    </tbody>
+                </table>
+                <button onclick="location.reload()" class="btn-terminal" style="margin-top: 20px; background: #001a0d; border-color: #00ffaa; color: #00ffaa; width: 100%; font-size: 1rem; padding: 12px; cursor: pointer;">
+                    [ FINALIZAR CAMBIOS Y REINICIAR CONSOLA ]
+                </button>
             </div>
         </div>
     </div>
